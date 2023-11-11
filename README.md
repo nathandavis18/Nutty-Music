@@ -10,19 +10,13 @@ Current Features:
     Search for Youtube Song and download a temp.wav file, which is deleted on close of the program.
 
 Features to be added:
-  
+
     Permanent download option for songs.
-  
     Playing songs through the GUI
-  
     Non-Blocking GUI features.
-  
-    Local File search for .wav file
-  
+    Local file search for .wav file
     Queue Feature
-  
     Play/Pause feature
-  
     Prettier GUI
 
 This is a Windows-Only software. A Visual Studio solution and vcxproj file are included.
