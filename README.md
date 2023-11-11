@@ -23,4 +23,4 @@ This is a Windows-Only software. A Visual Studio solution and vcxproj file are i
 To build, simply open in Visual Studio, and build, either in release or debug mode.
 All dependencies and includes are included.
 
-Requires VC++ 20+.
+Requires VC++.
