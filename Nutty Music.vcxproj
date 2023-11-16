@@ -148,6 +148,7 @@
   <ItemGroup>
     <ClCompile Include="src\mainapp.cpp" />
     <ClCompile Include="src\mainwindow.cpp" />
+    <ClCompile Include="src\MusicController.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

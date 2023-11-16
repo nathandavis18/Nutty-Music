@@ -29,7 +29,9 @@ MyFrame::MyFrame() : wxFrame(NULL, wxID_ANY, "Nutty Music", wxDefaultPosition, w
 }
 
 void MyFrame::OnClose(wxCloseEvent& event) {
-	std::filesystem::remove("ytdlp/temp.wav"); 
+	std::filesystem::remove("ytdlp/temp1.wav"); 
 	std::filesystem::remove("ytdlp/temp2.wav");
+	std::filesystem::remove("ytdlp/temp3.wav");
+
 	Destroy();
 }
