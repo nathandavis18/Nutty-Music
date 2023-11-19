@@ -5,7 +5,6 @@
 #include <winrt/windows.media.core.h>
 #include <winrt/windows.media.playback.h>
 #include <string>
-#include <array>
 #include <filesystem>
 
 #include "custom/myVector.hpp" //My own custom-built vector class
@@ -28,10 +27,12 @@ public:
 	void skipForward();
 	void skipBackward();
 	void checkQueue(); //Checks the queue to see what temporary songs should be downloaded (3 songs ahead and behind, if possible)
-	bool getPauseState(); //Returns isPaused
+	bool isPaused(); //Returns pauseState
+	bool isActive();
 private:
 	winrt::Windows::Media::Playback::MediaPlayer player;
 	custom::myVector<Song> queue;
-	bool isPaused = false;
+	bool pauseState = false;
+	bool playerActive = false;
 	int currentQueueIndex = -1;
 };

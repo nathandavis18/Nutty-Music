@@ -1,6 +1,6 @@
 #include "../Headers/MusicController.hpp"
 
-MusicController::MusicController() : player(winrt::Windows::Media::Playback::MediaPlayer()), queue(0) {}
+MusicController::MusicController() : player(winrt::Windows::Media::Playback::MediaPlayer()), queue() {}
 
 void MusicController::addToQueue(std::string& songUrl, std::string songTitle, bool isLocalSong) {
 	Song s;
@@ -38,15 +38,13 @@ void MusicController::playSong(Song& s) {
 void MusicController::pauseSong() {
 	if (player.CanPause()) {
 		player.Pause();
-		isPaused = true;
+		pauseState = true;
 	}
 }
 
 void MusicController::resumeSong() {
-	if (player.CanPause()) {
-		player.Play();
-		isPaused = false;
-	}
+	player.Play();
+	pauseState = false;
 }
 
 void MusicController::closePlayer() {
@@ -89,6 +87,10 @@ void MusicController::checkQueue() {
 	}
 }
 
-bool MusicController::getPauseState() {
-	return isPaused;
+bool MusicController::isPaused() {
+	return pauseState;
+}
+
+bool MusicController::isActive() {
+	return playerActive;
 }

@@ -1,5 +1,4 @@
 #pragma once
-#include <filesystem>
 #include "wx/wxprec.h"
 
 #ifndef WX_PRECOMP

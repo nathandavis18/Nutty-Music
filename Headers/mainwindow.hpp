@@ -23,7 +23,12 @@ private:
 	enum {
 		SEARCH_ID = 2, BUTTON = 3, LABEL = 4
 	};
-	std::thread t;
+
+	/// <summary>
+	/// ====================================================================
+	/// A LOT OF THIS NEEDS TO BE CLEANED UP, THIS IS NEXT ON THE TO-DO LIST
+	/// ====================================================================
+	/// </summary>
 	wxArrayString output, errors;
 	MyFrame* myFrame;
 	wxTextCtrl* text;
@@ -35,6 +40,7 @@ private:
 	YtdlpCalls calls;
 	custom::myVector<std::string> urls;
 	custom::myVector<std::string> songTitles;
+	custom::myVector<std::string> results;
 	custom::myVector<wxStaticText*> labels;
 	custom::myVector<wxButton*> playButtons;
 	custom::myVector<wxButton*> addQueueButtons;
@@ -52,7 +58,6 @@ private:
 	void reverseSkipBtnClick(wxCommandEvent& event);
 	void clearPrevSearch();
 	void OnClose(wxCloseEvent& event);
-	void searchResults(std::wstring);
 	void OnIdle(wxIdleEvent&);
 
 

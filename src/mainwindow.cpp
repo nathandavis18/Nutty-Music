@@ -26,7 +26,12 @@ MyWindow::MyWindow() : myFrame(new MyFrame()) {
 	myFrame->Bind(wxEVT_IDLE, &MyWindow::OnIdle, this);
 }
 
-void MyWindow::OnIdle(wxIdleEvent& evt) {
+/// <summary>
+/// Controls what happens while the app is idle.
+/// Used to handle the search happening in a secondary thread
+/// </summary>
+/// <param name="evt"></param>
+void MyWindow::OnIdle(wxIdleEvent&) {
 	if (doneSearching) {
 		std::filesystem::remove("ytdlp\\outputs.txt");
 		lbl->Show(false);
@@ -34,6 +39,7 @@ void MyWindow::OnIdle(wxIdleEvent& evt) {
 		createButton(0, "vidID");
 		createLabels(0, "sub");
 		text->Enable();
+		wxMessageBox(results[1]);
 		return;
 	}
 	if (isSearching) {
@@ -44,15 +50,24 @@ void MyWindow::OnIdle(wxIdleEvent& evt) {
 	return;
 }
 
-void MyWindow::PressedEnter(wxCommandEvent& event) {
+/// <summary>
+/// When the user enters a search keyword, start the search in a new thread
+/// </summary>
+/// <param name=""></param>
+void MyWindow::PressedEnter(wxCommandEvent&) {
 	clearPrevSearch();
 	std::wstring s = text->GetValue().ToStdWstring();
 	if (s.find_first_not_of(' ') != s.npos) {
-		t = std::thread(&MyWindow::searchResults, this, s);
+		std::thread t(&YtdlpCalls::searchResults, &calls, s, std::ref(doneSearching), std::ref(isSearching), std::ref(results));
 		t.detach();
 	}
 }
 
+/// <summary>
+/// Creates the play and add to queue buttons for each song in the results list
+/// </summary>
+/// <param name="index"></param>
+/// <param name="url"></param>
 void MyWindow::createButton(int index, std::string url) {
 	wxButton* playButton = new wxButton(myFrame, BUTTON + index + playButtonIndexOffset, "Play", wxPoint(900, 50 + (50 * index)), wxSize(75, 25));
 	playButton->Bind(wxEVT_BUTTON, &MyWindow::playBtnClick, this);
@@ -66,11 +81,20 @@ void MyWindow::createButton(int index, std::string url) {
 	urls.push_back(url);
 }
 
+/// <summary>
+/// Creates the labels for each song in the results list
+/// </summary>
+/// <param name="index"></param>
+/// <param name="title"></param>
 void MyWindow::createLabels(int index, std::string title) {
 	wxStaticText* st = new wxStaticText(myFrame, LABEL + index + songTitleLabelIndexOffset, title, wxPoint(500, 50 + (50 * index)), wxSize(300, 50));
 	labels.push_back(st);
 }
 
+/// <summary>
+/// When the play button is clicked, download the song and start it
+/// </summary>
+/// <param name="event"></param>
 void MyWindow::playBtnClick(wxCommandEvent& event) {
 	wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
 	int id = event.GetId() - wxID_HIGHEST - 1;
@@ -79,11 +103,18 @@ void MyWindow::playBtnClick(wxCommandEvent& event) {
 	music.forcePlay(urls[id], songTitles[id]);
 }
 
+/// <summary>
+/// Add song to queue. Song gets downloaded depending on position in queue
+/// </summary>
+/// <param name="event"></param>
 void MyWindow::queueBtnClick(wxCommandEvent& event) {
 	int id = event.GetId() - wxID_HIGHEST - 15;
 	music.addToQueue(urls[id], songTitles[id]);
 }
 
+/// <summary>
+/// Clears the labels, buttons, and vectors from the last search
+/// </summary>
 void MyWindow::clearPrevSearch() {
 	for (int i = 0; i < labels.size(); ++i) {
 		labels[i]->Destroy();
@@ -95,87 +126,47 @@ void MyWindow::clearPrevSearch() {
 	addQueueButtons.clear();
 	urls.clear();
 	songTitles.clear();
+	results.clear();
 }
 
-void MyWindow::playPauseBtnClick(wxCommandEvent& event) {
-	if (music.getPauseState()) {
-		music.resumeSong();
-	}
-	else {
-		music.pauseSong();
+/// <summary>
+/// Resuming and Pausing music button handler
+/// </summary>
+/// <param name=""></param>
+void MyWindow::playPauseBtnClick(wxCommandEvent&) {
+	if (music.isActive()) {
+		if (music.isPaused()) {
+			music.resumeSong();
+		}
+		else {
+			music.pauseSong();
+		}
 	}
 }
 
-void MyWindow::forwardSkipBtnClick(wxCommandEvent& event) {
+/// <summary>
+/// Forward skip button handler
+/// </summary>
+/// <param name=""></param>
+void MyWindow::forwardSkipBtnClick(wxCommandEvent&) {
 	music.skipForward();
 }
 
-void MyWindow::reverseSkipBtnClick(wxCommandEvent& event) {
+/// <summary>
+/// Reverse Skip button handler
+/// </summary>
+/// <param name=""></param>
+void MyWindow::reverseSkipBtnClick(wxCommandEvent&) {
 	music.skipBackward();
 }
 
-void MyWindow::OnClose(wxCloseEvent& event) {
+/// <summary>
+/// When the program is closed, make sure everything is properly destroyed and all temp files are cleaned up.
+/// Makes sure the music player is properly closed as well.
+/// </summary>
+/// <param name=""></param>
+void MyWindow::OnClose(wxCloseEvent&) {
 	music.closePlayer();
 	wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
 	myFrame->Destroy();
-}
-
-void MyWindow::searchResults(std::wstring search) {
-	isSearching = true;
-
-	std::wstring song = L"\"" + search + L"\"";
-	std::wstring cmd = L"--flat-playlist --playlist-items 1:15 --print-to-file \"%(title)s BREAKPOINT %(id)s : %(original_url)s\" ytdlp\\outputs.txt --skip-download --default-search https://music.youtube.com/search?q= " + song;
-
-	SHELLEXECUTEINFO sei = { 0 };
-	sei.cbSize = sizeof(SHELLEXECUTEINFO);
-	sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-	sei.hwnd = NULL;
-	sei.lpVerb = NULL;
-	sei.lpFile = L"ytdlp\\yt-dlp";
-	sei.lpParameters = cmd.c_str();
-	sei.nShow = SW_HIDE;
-	sei.hInstApp = NULL;
-
-	ShellExecuteEx(&sei);
-	WaitForSingleObject(sei.hProcess, INFINITE);
-	CloseHandle(sei.hProcess);
-
-	custom::myVector<std::string> result;
-	std::string line;
-	std::fstream stream{ "ytdlp/outputs.txt", stream.in };
-	if (!stream.is_open())
-		return;
-
-	while (std::getline(stream, line)) {
-		result.push_back(line);
-	}
-
-	std::string sub = "";
-	std::string urlSub = "";
-	std::string shortsUrl = "";
-	std::string vidID = "";
-	int index = 0;
-	for (int i = 0; i < result.size(); ++i) {
-		if (index == 5) break;
-
-		sub = result[i].substr(0, result[i].find("BREAKPOINT") - 1);
-		if (!songTitles.find(sub)) {
-			urlSub = result[i].substr(result[i].find("BREAKPOINT") + 11, result[i].length() - 1);
-			shortsUrl = urlSub.substr(urlSub.find(":") + 1, urlSub.length() - 1);
-			if (shortsUrl.find("browse") != sub.npos) continue;
-
-
-			songTitles.push_back(sub);
-			vidID = urlSub.substr(0, urlSub.find(":"));
-			//std::string cmd2 = "--skip-download --print-to-file \"%(urls)s ||||||BREAKER||||||\" ytdlp\\urlOutput.txt --default-search gvsearch " + vidID;
-			//ShellExecuteA(NULL, NULL, "ytdlp\\yt-dlp.exe", cmd2.c_str(), NULL, SW_HIDE);
-			//createButton(index, vidID);
-			//createLabels(index, sub);
-			++index;
-		}
-	} 
-	isSearching = false;
-	doneSearching = true;
-	wxWakeUpIdle(); //If the app is idle, this calls the idle function
-	return;
 }
