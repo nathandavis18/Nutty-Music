@@ -142,13 +142,13 @@
     <ClInclude Include="Headers\mainapp.hpp" />
     <ClInclude Include="Headers\mainwindow.hpp" />
     <ClInclude Include="Headers\MusicController.hpp" />
-    <ClInclude Include="Headers\YtdlpCalls.hpp" />
+    <ClInclude Include="Headers\DataProcessing.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\mainapp.cpp" />
     <ClCompile Include="src\mainwindow.cpp" />
     <ClCompile Include="src\MusicController.cpp" />
-    <ClCompile Include="src\YtdlpCalls.cpp" />
+    <ClCompile Include="src\DataProcessing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="build\natvis\myVector.natvis" />

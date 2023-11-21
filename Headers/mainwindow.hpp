@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <string>
 #include <thread>
+#include <mutex>
 #include <chrono>
 #include "custom/myVector.hpp" //My own custom-built vector class
 #include "wx/wxprec.h"
@@ -12,7 +13,7 @@
 #include "wx/wx.h"
 #endif
 
-#include "YtdlpCalls.hpp"
+#include "DataProcessing.hpp"
 #include "mainapp.hpp"
 #include "MusicController.hpp"
 
@@ -31,20 +32,16 @@ private:
 	/// </summary>
 	wxArrayString output, errors;
 	MyFrame* myFrame;
-	wxTextCtrl* text;
 	MusicController music;
-	wxButton* test;
-	wxButton* playPauseButton;
-	wxButton* forwardSkipButton;
-	wxButton* reverseSkipButton;
-	YtdlpCalls calls;
+	DataProcessing processData;
+	custom::myVector<std::wstring> results;
 	custom::myVector<std::string> urls;
-	custom::myVector<std::string> songTitles;
-	custom::myVector<std::string> results;
 	custom::myVector<wxStaticText*> labels;
 	custom::myVector<wxButton*> playButtons;
 	custom::myVector<wxButton*> addQueueButtons;
-	wxStaticText* lbl;
+
+	wxTextCtrl* text;
+	wxStaticText* searchingLabel;
 
 
 	//Functions to control the actions of the UI
@@ -56,6 +53,7 @@ private:
 	void playPauseBtnClick(wxCommandEvent& event);
 	void forwardSkipBtnClick(wxCommandEvent& event);
 	void reverseSkipBtnClick(wxCommandEvent& event);
+	void StartSearch(const std::wstring, custom::myVector<std::wstring>&);
 	void clearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
@@ -66,4 +64,5 @@ private:
 	static constexpr int songTitleLabelIndexOffset = 25;
 	bool doneSearching = false;
 	bool isSearching = false;
+	std::mutex m;
 };

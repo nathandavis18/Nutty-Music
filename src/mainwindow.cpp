@@ -10,13 +10,14 @@ wxIMPLEMENT_APP(MyApp);
 
 MyWindow::MyWindow() : myFrame(new MyFrame()) {
 	myFrame->Show(true);
-	text = new wxTextCtrl(myFrame, SEARCH_ID, "Enter a URL", wxPoint(700, 540), wxSize(100, 100), wxTE_PROCESS_ENTER);
-	playPauseButton = new wxButton(myFrame, wxID_ANY, "|> ||", wxPoint(100, 100), wxSize(200, 200));
-	forwardSkipButton = new wxButton(myFrame, wxID_ANY, ">|", wxPoint(100, 300), wxSize(200, 200));
-	reverseSkipButton = new wxButton(myFrame, wxID_ANY, "|<", wxPoint(100, 500), wxSize(200, 200));
-	lbl = new wxStaticText(myFrame, LABEL - 1 + songTitleLabelIndexOffset, "Searching rn", wxPoint(500, 50 + (50 * 0)), wxSize(300, 50));
-	lbl->Show(false);
+	text = new wxTextCtrl(myFrame, SEARCH_ID, wxEmptyString, wxPoint(300, 540), wxSize(600, 100), wxTE_PROCESS_ENTER);
+	wxButton* playPauseButton = new wxButton(myFrame, wxID_ANY, "|> ||", wxPoint(100, 100), wxSize(200, 200));
+	wxButton* forwardSkipButton = new wxButton(myFrame, wxID_ANY, ">|", wxPoint(100, 300), wxSize(200, 200));
+	wxButton* reverseSkipButton = new wxButton(myFrame, wxID_ANY, "|<", wxPoint(100, 500), wxSize(200, 200));
+	searchingLabel = new wxStaticText(myFrame, LABEL - 1 + songTitleLabelIndexOffset, "Searching rn", wxPoint(500, 50 + (50 * 0)), wxSize(300, 50));
+	searchingLabel->Show(false);
 
+	text->SetHint("Enter a song title/artist");
 	text->Bind(wxEVT_TEXT_ENTER, &MyWindow::PressedEnter, this);
 	playPauseButton->Bind(wxEVT_BUTTON, &MyWindow::playPauseBtnClick, this);
 	forwardSkipButton->Bind(wxEVT_BUTTON, &MyWindow::forwardSkipBtnClick, this);
@@ -34,7 +35,7 @@ MyWindow::MyWindow() : myFrame(new MyFrame()) {
 void MyWindow::OnIdle(wxIdleEvent&) {
 	if (doneSearching) {
 		std::filesystem::remove("ytdlp\\outputs.txt");
-		lbl->Show(false);
+		searchingLabel->Show(false);
 		doneSearching = false;
 		createButton(0, "vidID");
 		createLabels(0, "sub");
@@ -44,7 +45,7 @@ void MyWindow::OnIdle(wxIdleEvent&) {
 	}
 	if (isSearching) {
 		text->Disable();
-		lbl->Show(true);
+		searchingLabel->Show(true);
 		return;
 	} 
 	return;
@@ -56,11 +57,21 @@ void MyWindow::OnIdle(wxIdleEvent&) {
 /// <param name=""></param>
 void MyWindow::PressedEnter(wxCommandEvent&) {
 	clearPrevSearch();
-	std::wstring s = text->GetValue().ToStdWstring();
-	if (s.find_first_not_of(' ') != s.npos) {
-		std::thread t(&YtdlpCalls::searchResults, &calls, s, std::ref(doneSearching), std::ref(isSearching), std::ref(results));
+	std::wstring search = text->GetValue().ToStdWstring();
+	if (search.find_first_not_of(' ') != search.npos) {
+		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results));
 		t.detach();
 	}
+}
+
+void MyWindow::StartSearch(const std::wstring searchString, custom::myVector<std::wstring>& vecResults) {
+	m.lock();
+	custom::myVector<std::wstring> temp;
+	temp = processData.GetSearchResults(searchString, doneSearching, isSearching); //results contains all the data, now we need to parse it
+	temp = processData.GetTop5(temp);
+	processData.GetDownloadUrl(temp);
+	m.unlock();
+	wxWakeUpIdle(); //If the app is idle, this calls the idle function
 }
 
 /// <summary>
@@ -72,13 +83,11 @@ void MyWindow::createButton(int index, std::string url) {
 	wxButton* playButton = new wxButton(myFrame, BUTTON + index + playButtonIndexOffset, "Play", wxPoint(900, 50 + (50 * index)), wxSize(75, 25));
 	playButton->Bind(wxEVT_BUTTON, &MyWindow::playBtnClick, this);
 	playButtons.push_back(playButton);
-	test = playButton;
-	test->Show(true);
 
 	wxButton* addQueueButton = new wxButton(myFrame, BUTTON + index + addQueueButtonIndexOffset, "Add to Queue", wxPoint(1000, 50 + (50 * index)), wxSize(100, 25));
 	addQueueButton->Bind(wxEVT_BUTTON, &MyWindow::queueBtnClick, this);
 	addQueueButtons.push_back(addQueueButton);
-	urls.push_back(url);
+	//urls.push_back(url);
 }
 
 /// <summary>
@@ -98,9 +107,9 @@ void MyWindow::createLabels(int index, std::string title) {
 void MyWindow::playBtnClick(wxCommandEvent& event) {
 	wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
 	int id = event.GetId() - wxID_HIGHEST - 1;
-	std::string cmd = "-x --audio-format mp3 -o temp\\%(title)s.mp3 -f ba --use-extractors youtube --downloader ffmpeg -N 4 --throttled-rate 100000K " + urls[id];
-	wxExecute("cmd.exe /c cd ytdlp & yt-dlp " + cmd, output, errors, wxEXEC_ASYNC);
-	music.forcePlay(urls[id], songTitles[id]);
+	//std::string cmd = "-x --audio-format mp3 -o temp\\%(title)s.mp3 -f ba --use-extractors youtube --downloader ffmpeg -N 4 --throttled-rate 100000K " + urls[id];
+	//wxExecute("cmd.exe /c cd ytdlp & yt-dlp " + cmd, output, errors, wxEXEC_ASYNC);
+	//music.forcePlay(urls[id], songTitles[id]);
 }
 
 /// <summary>
@@ -109,7 +118,7 @@ void MyWindow::playBtnClick(wxCommandEvent& event) {
 /// <param name="event"></param>
 void MyWindow::queueBtnClick(wxCommandEvent& event) {
 	int id = event.GetId() - wxID_HIGHEST - 15;
-	music.addToQueue(urls[id], songTitles[id]);
+	//music.addToQueue(urls[id], songTitles[id]);
 }
 
 /// <summary>
@@ -124,8 +133,8 @@ void MyWindow::clearPrevSearch() {
 	labels.clear();
 	playButtons.clear();
 	addQueueButtons.clear();
-	urls.clear();
-	songTitles.clear();
+	//urls.clear();
+	//songTitles.clear();
 	results.clear();
 }
 

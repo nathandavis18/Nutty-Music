@@ -4,10 +4,10 @@
 #include "myReverseIterator.hpp"
 #include <vector> //Only used for comparing my vector to an std::vector
 #include <algorithm>
-namespace custom{
+namespace custom {
 
     template <typename T>
-    class myVector{
+    class myVector {
     public:
         using value_type = T;
         using difference_type = std::ptrdiff_t;
@@ -16,44 +16,56 @@ namespace custom{
         using reference = T&;
         using const_reference = const T&;
         std::allocator<value_type> allocator;
+        typedef std::allocator_traits<std::allocator<value_type>> alloc_traits;
 
         myVector() : m_capacity(0), buffer(nullptr), m_finish(nullptr) {} //Default Constructor
 
-        myVector(const myVector& vec) : m_capacity(vec.size()), buffer(vec.buffer), m_finish(vec.m_finish) {} //Copy Constructor
+        myVector(const myVector& vec) : m_capacity(vec.capacity()), buffer(nullptr), m_finish(nullptr) {
+            buffer = alloc_traits::allocate(allocator, m_capacity);
+            m_finish = buffer;
+            for (int i = 0; i < vec.size(); ++i) {
+                alloc_traits::construct(allocator, buffer + i, *(vec.buffer + i));
+                ++m_finish;
+            }
+        } //Copy Constructor
 
-        myVector(myVector&& moveVec) : m_capacity(std::move(moveVec.m_capacity)), 
-                 buffer(std::move(moveVec.buffer)), m_finish(std::move(moveVec.m_finish)) {} //Move constructor
+        myVector(myVector&& moveVec) noexcept : m_capacity(std::move(moveVec.m_capacity)),
+            buffer(std::move(moveVec.buffer)), m_finish(std::move(moveVec.m_finish)) {} //Move constructor
 
-        myVector(const size_t capacity) : m_capacity(capacity), buffer(allocator.allocate(capacity)), m_finish(buffer + capacity) {
-            for(myIterator<value_type> it = begin(); it != end(); ++it){
+        myVector(const size_t capacity) : m_capacity(capacity), buffer(alloc_traits::allocate(allocator, capacity)), m_finish(buffer + capacity) {
+            for (myIterator<value_type> it = begin(); it != end(); ++it) {
                 std::uninitialized_fill(begin(), end(), typename std::iterator_traits<myIterator<value_type>>::value_type());
             }
         } //Capacity constructor 
 
         //Initializer List Constructor
-        myVector(std::initializer_list<value_type> il) : m_capacity(il.end() - il.begin()), buffer(allocator.allocate(il.end() - il.begin())), m_finish(buffer) {
+        myVector(std::initializer_list<value_type> il) : m_capacity(il.end() - il.begin()), buffer(alloc_traits::allocate(allocator, il.size())), m_finish(buffer) {
             auto it = il.begin();
-            for(int i = 0; i < il.size(); ++i){
-                std::construct_at((buffer + i), *it);
+            for (int i = 0; i < il.size(); ++i) {
+                alloc_traits::construct(allocator, (buffer + i), *it);
                 ++it;
                 ++m_finish;
             }
         }
 
-        ~myVector(){ //Destructor
+        ~myVector() { //Destructor
             destroyObjects(buffer, m_finish);
-            allocator.deallocate(buffer, m_capacity);
+            alloc_traits::deallocate(allocator, buffer, m_capacity);
         }
 
-        [[nodiscard]] myVector& operator=(const myVector& cpy) noexcept { //Copy assignment
-            m_capacity = cpy.m_capacity;
-            buffer = cpy.buffer;
-            m_finish = cpy.m_finish;
+        myVector& operator=(const myVector& cpy) noexcept { //Copy assignment
+            m_capacity = cpy.capacity();
+            buffer = alloc_traits::allocate(m_capacity);
+            m_finish = buffer;
+            for (int i = 0; i < cpy.size(); ++i) {
+                alloc_traits::construct(allocator, buffer + i, *(cpy.buffer + i));
+                ++m_finish;
+            }
             return *this;
         }
 
         myVector& operator=(myVector&& moveVec) noexcept { //Move assignment
-            if(this == &moveVec) return *this; //Moving something into itself doesn't make sense
+            if (this == &moveVec) return *this; //Moving something into itself doesn't make sense
 
             m_capacity = std::move(moveVec.m_capacity);
             buffer = std::move(moveVec.buffer);
@@ -63,11 +75,11 @@ namespace custom{
 
         myVector& operator=(std::initializer_list<value_type> il) noexcept { //Initializer List assignment
             m_capacity = il.end() - il.begin();
-            buffer = allocator.allocate(m_capacity);
+            buffer = alloc_traits::allocate(m_capacity);
             m_finish = buffer;
             auto it = il.begin();
-            for(int i = 0; i < il.size(); ++i){
-                std::construct_at(buffer + i, *it);
+            for (int i = 0; i < il.size(); ++i) {
+                alloc_traits::construct(allocator, buffer + i, *it);
                 ++it;
                 ++m_finish;
             }
@@ -75,16 +87,16 @@ namespace custom{
         }
 
         [[nodiscard]] bool operator==(const myVector& b) noexcept { //Tests if two custom vectors are equal
-            if(size() != b.size()) return false;
-            for(int i = 0; i < size(); ++i) { 
-                if((*this)[i] != b[i]) return false;
+            if (size() != b.size()) return false;
+            for (int i = 0; i < size(); ++i) {
+                if ((*this)[i] != b[i]) return false;
             }
             return true;
         }
         [[nodiscard]] bool operator==(const std::vector<T>& b) noexcept { //Tests if a std::vector and myVector are equal
-            if(size() != b.size()) return false;
-            for(int i = 0; i < size(); ++i) { 
-                if((*this)[i] != b[i]) return false;
+            if (size() != b.size()) return false;
+            for (int i = 0; i < size(); ++i) {
+                if ((*this)[i] != b[i]) return false;
             }
             return true;
         }
@@ -98,28 +110,28 @@ namespace custom{
         }
 
         [[nodiscard]] reference at(int index) { //Returns a read/write value at the given index
-            try{
+            try {
                 return *(buffer + index);
             }
-            catch(std::out_of_range exception){
+            catch (std::out_of_range exception) {
                 throw exception = "Invalid Index";
             }
         }
 
         [[nodiscard]] const_reference at(int index) const { //Returns a read-only value at the given index
-            try{
+            try {
                 return *(buffer + index);
             }
-            catch(std::out_of_range exception){
+            catch (std::out_of_range exception) {
                 throw exception = "Invalid Index";
             }
         }
 
         void push_back(const_reference data) { //Adds a new value to the back of the vector. 
-            if(size() == m_capacity){ //If the new size > capacity, allocate more space
+            if (size() == m_capacity) { //If the new size > capacity, allocate more space
                 realloc();
             }
-            std::construct_at(m_finish++, data);
+            emplace_back(data);
         }
 
         void push_back(T&& data) { //Adds a moved value to the back of the vector
@@ -127,11 +139,11 @@ namespace custom{
         }
 
         void push_front(const_reference data) { //Adds the new value to the front of the vector, after moving everything forward one position
-            if(size() == m_capacity){ //Allocates more space if needed
+            if (size() == m_capacity) { //Allocates more space if needed
                 realloc();
             }
             move_forward(begin(), end());
-            std::construct_at(buffer, data);
+            alloc_traits::construct(allocator, buffer, data);
             ++m_finish;
         }
         void push_front(T&& data) { //Adds the new value to the front of the vector, after moving everything forward one position
@@ -147,18 +159,18 @@ namespace custom{
             move_backward(begin(), end());
         }
 
-        void reserve(size_t capacity){
-            if(capacity <= m_capacity) return; //Reserve doesn't shrink capacity, only makes it grow
+        void reserve(size_t capacity) {
+            if (capacity <= m_capacity) return; //Reserve doesn't shrink capacity, only makes it grow
             realloc(capacity);
         }
 
         void resize(size_t newSize) {
-            if(newSize < size()){
-                while(m_finish != buffer + newSize){
+            if (newSize < size()) {
+                while (m_finish != buffer + newSize) {
                     std::destroy_at(--m_finish);
                 }
             }
-            else if(newSize > m_capacity){
+            else if (newSize > m_capacity) {
                 realloc(newSize);
             }
             std::uninitialized_fill(begin() + size(), begin() + newSize, typename std::iterator_traits<myIterator<value_type>>::value_type());
@@ -166,92 +178,92 @@ namespace custom{
         }
 
         void reverse() noexcept {
-            if(begin() == end() || begin() + 1 == end()) return; //Vectors of size 0 and 1 are already reversed
+            if (begin() == end() || begin() + 1 == end()) return; //Vectors of size 0 and 1 are already reversed
 
             auto fIt = begin(), bIt = end() - 1;
-            while(fIt < bIt){
+            while (fIt < bIt) {
                 std::iter_swap(fIt, bIt);
                 ++fIt; --bIt;
             }
         }
 
         void shrink_to_fit() { //Deallocates space such that the vector will have size == capacity
-            if(m_capacity == size()) return; //Already properly shrunk
+            if (m_capacity == size()) return; //Already properly shrunk
 
             size_t tmpCapacity = size();
-            pointer newBuffer = allocator.allocate(tmpCapacity);
+            pointer newBuffer = alloc_traits::allocate(tmpCapacity);
             pointer newFinish = newBuffer;
-            for(int i = 0; i < size(); ++i){
-                std::construct_at(newBuffer + i, std::move_if_noexcept(*(buffer + i)));
+            for (int i = 0; i < size(); ++i) {
+                alloc_traits::construct(allocator, newBuffer + i, std::move_if_noexcept(*(buffer + i)));
                 ++newFinish;
             }
             std::swap(m_capacity, tmpCapacity);
             std::swap(buffer, newBuffer);
             std::swap(m_finish, newFinish);
             destroyObjects(newBuffer, newFinish);
-            allocator.deallocate(newBuffer, tmpCapacity);
+            alloc_traits::deallocate(newBuffer, tmpCapacity);
         }
 
-        void swap(myVector& v) noexcept{ //Swaps two vectors
+        void swap(myVector& v) noexcept { //Swaps two vectors
             std::swap(m_capacity, v.m_capacity);
             std::swap(m_finish, v.m_finish);
             std::swap(buffer, v.buffer);
         }
 
         void clear() noexcept { //Removes all the data from a vector. Doesn't affect capacity
-            while(m_finish > buffer){
+            while (m_finish > buffer) {
                 std::destroy_at(--m_finish);
             }
         }
 
         template<class Iter>
-        void insert(Iter it, const_reference value){
-            if(size() == m_capacity){
+        void insert(Iter it, const_reference value) {
+            if (size() == m_capacity) {
                 size_t offset = it - begin(); //Get the iterator's offset so we don't lose it after reallocation
                 realloc();
                 it = begin() + offset; //Set the iterator back to the correct offset, since data may have been moved to a new location after reallocation.
             }
             move_forward(it, end());
-            std::construct_at(buffer + (it - begin()), value);
+            alloc_traits::construct(allocator, buffer + (it - begin()), value);
             ++m_finish;
         }
 
         template<class Iter, class... Args>
-        void emplace(Iter it, Args&&... args){
-            if(size() == m_capacity){
+        void emplace(Iter it, Args&&... args) {
+            if (size() == m_capacity) {
                 size_t offset = it - begin();
                 realloc();
                 it = begin() + offset;
             }
             move_forward(it, end());
-            std::construct_at(buffer + (it - begin()), std::forward<Args>(args)...);
+            alloc_traits::construct(allocator, buffer + (it - begin()), std::forward<Args>(args)...);
             ++m_finish;
         }
         template<class... Args>
-        void emplace_back(Args&&... args){
-            if(size() == m_capacity){
+        void emplace_back(Args&&... args) {
+            if (size() == m_capacity) {
                 realloc();
             }
-            std::construct_at(m_finish++, std::forward<Args>(args)...);
+            alloc_traits::construct(allocator, m_finish++, std::forward<Args>(args)...);
         }
 
-        bool find(const_reference value_to_find){
-            for(auto it = begin(); it != end(); ++it){
-                if(*it == value_to_find) return true;
+        bool find(const_reference value_to_find) {
+            for (auto it = begin(); it != end(); ++it) {
+                if (*it == value_to_find) return true;
             }
             return false;
         }
 
         reference front() noexcept { return *begin(); } //Returns a read/write value for the object at the front of the vector
         const_reference front() const noexcept { return *cbegin(); } //Returns a read-only value for the object at the front of the vector
-        reference back() noexcept { return *(begin() + (size()  - 1)); } //Returns a read/write value for the object at the back of the vector
+        reference back() noexcept { return *(begin() + (size() - 1)); } //Returns a read/write value for the object at the back of the vector
         const_reference back() const noexcept { return *(begin() + (size() - 1)); } //Returns a read-only value for the object at the back of the vector
 
         myIterator<value_type> begin() noexcept { //Returns a random-access iterator pointing to the front of the vector
             return myIterator<value_type>(buffer);
         }
 
-        const myIterator<value_type> cbegin() const noexcept{ //Returns a conset random-access iterator to the first element in the vector
+        const myIterator<value_type> cbegin() const noexcept { //Returns a conset random-access iterator to the first element in the vector
             return myIterator<value_type>(buffer);
         }
 
@@ -279,11 +291,11 @@ namespace custom{
             return myReverseIterator<value_type>(buffer - 1);
         }
 
-        [[nodiscard]] bool isEmpty() const noexcept { return begin() == end(); } 
+        [[nodiscard]] bool isEmpty() const noexcept { return begin() == end(); }
 
         const size_t size() const noexcept { return size_t(m_finish - buffer); }
 
-        const size_t capacity() const noexcept {return m_capacity; }
+        const size_t capacity() const noexcept { return m_capacity; }
 
     private:
         pointer buffer;
@@ -292,20 +304,19 @@ namespace custom{
         pointer m_finish;
 
         const size_t newCapacity() const noexcept { return m_capacity * 3 / 2 + 1; }
+
         void destroyObjects(pointer& buff, pointer& finish) noexcept {
-            for(int i = 0; i < finish - buff; ++i){
-                std::destroy_at(buff + i);
-            }
+            std::destroy(begin(), end());
         }
-        void realloc(size_t capacity = 0){
+        void realloc(size_t capacity = 0) {
             pointer newFinish, newBuffer;
             size_t tmpCapacity;
-            try{
+            try {
                 tmpCapacity = capacity == 0 ? newCapacity() : capacity;
-                newBuffer = allocator.allocate(tmpCapacity);
+                newBuffer = alloc_traits::allocate(allocator, tmpCapacity);
                 newFinish = newBuffer;
-                for(size_t i = 0; i < size(); ++i){
-                    std::construct_at(newBuffer + i, std::move_if_noexcept(*(buffer + i)));
+                for (size_t i = 0; i < size(); ++i) {
+                    alloc_traits::construct(allocator, newBuffer + i, std::move_if_noexcept(*(buffer + i)));
                     ++newFinish;
                 }
                 std::swap(m_capacity, tmpCapacity);
@@ -313,28 +324,28 @@ namespace custom{
                 std::swap(m_finish, newFinish);
 
                 destroyObjects(newBuffer, newFinish);
-                allocator.deallocate(newBuffer, tmpCapacity);
+                alloc_traits::deallocate(allocator, newBuffer, tmpCapacity);
             }
-            catch(...){
+            catch (...) {
                 destroyObjects(newBuffer, newFinish);
-                allocator.deallocate(newBuffer, tmpCapacity);
+                alloc_traits::deallocate(allocator, newBuffer, tmpCapacity);
                 throw;
             }
         }
         template<class Iter>
         void move_forward(Iter start, Iter end) noexcept {
-            if(start == end) return;
+            if (start == end) return;
 
-            while(end != start){
+            while (end != start) {
                 *end = *(end - 1);
                 --end;
             }
         }
         template<class Iter>
         void move_backward(Iter start, Iter end) noexcept {
-            if(start == end) return;
+            if (start == end) return;
 
-            while(start != end){
+            while (start != end) {
                 *start = *(start + 1);
                 ++start;
             }
