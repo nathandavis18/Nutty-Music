@@ -10,3 +10,6 @@ x64/Release
 x64/Debug
 *.user
 *.filters
+/Debug/Nutty Music.tlog
+/Debug
+/ytdlp/outputs.txt
