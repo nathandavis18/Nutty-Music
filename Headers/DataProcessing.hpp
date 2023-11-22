@@ -13,9 +13,9 @@ public:
 	/// Takes in a wstring, a bool which controls if the search function is running, 
 	/// a bool that shows when it is completed, and an output vector.
 	/// </summary>
-	custom::myVector<std::wstring> GetSearchResults(const std::wstring&, bool&, bool&);
-	custom::myVector<std::wstring> GetTop5(custom::myVector<std::wstring>&);
-	void GetDownloadUrl(custom::myVector<std::wstring>&);
+	custom::myVector<std::string> GetSearchResults(const std::string&, bool&, bool&);
+	custom::myVector<std::string> GetTop5(custom::myVector<std::string>&);
+	void GetDownloadUrl(custom::myVector<std::string>&);
 private:
 	//custom::myVector<std::wstring> temp;
 };

@@ -1,30 +1,30 @@
 #include "../Headers/DataProcessing.hpp"
 
-custom::myVector<std::wstring> DataProcessing::GetSearchResults(const std::wstring& search, bool& isDone, bool& isSearching){
+custom::myVector<std::string> DataProcessing::GetSearchResults(const std::string& search, bool& isDone, bool& isSearching){
 	isSearching = true;
-	std::vector<std::wstring> temp;
+	custom::myVector<std::string> temp;
 
-	std::wstring song = L"\"" + search + L"\"";
-	std::wstring cmd = L"--flat-playlist --playlist-items 1:15 --print-to-file \"%(title)s BREAKPOINT %(id)s : %(original_url)s\" ytdlp\\outputs.txt --skip-download --no-warnings --default-search https://music.youtube.com/search?q= " + song;
+	std::string song = "\"" + search + "\"";
+	std::string cmd = "--flat-playlist --playlist-items 1:15 --print-to-file \"%(title)s BREAKPOINT %(id)s : %(original_url)s\" ytdlp\\outputs.txt --skip-download --no-warnings --default-search https://music.youtube.com/search?q= " + song;
 
-	SHELLEXECUTEINFO sei = { 0 };
+	SHELLEXECUTEINFOA sei = { 0 };
 	sei.cbSize = sizeof(SHELLEXECUTEINFO);
 	sei.fMask = SEE_MASK_NOCLOSEPROCESS;
 	sei.hwnd = NULL;
 	sei.lpVerb = NULL;
-	sei.lpFile = L"ytdlp\\yt-dlp";
+	sei.lpFile = "ytdlp\\yt-dlp";
 	sei.lpParameters = cmd.c_str();
 	sei.nShow = SW_HIDE;
 	sei.hInstApp = NULL;
 
-	ShellExecuteEx(&sei);
+	ShellExecuteExA(&sei);
 	WaitForSingleObject(sei.hProcess, INFINITE);
 	CloseHandle(sei.hProcess);
 
-	std::wstring line;
-	std::wfstream stream{ "ytdlp/outputs.txt", stream.in };
+	std::string line;
+	std::fstream stream{ "ytdlp/outputs.txt", stream.in };
 	if (!stream.is_open()) {
-		return custom::myVector<std::wstring>();
+		return custom::myVector<std::string>();
 	}
 
 	while (std::getline(stream, line)) {
@@ -32,30 +32,26 @@ custom::myVector<std::wstring> DataProcessing::GetSearchResults(const std::wstri
 	}
 	isSearching = false;
 	isDone = true;
-	custom::myVector<std::wstring> temp2(temp.size());
-	for (int i = 0; i < temp.size(); ++i) {
-		temp2[i] = temp[i];
-	}
-	return temp2;
+	return temp;
 }
 
-custom::myVector<std::wstring> DataProcessing::GetTop5(custom::myVector<std::wstring>& searchResults)
+custom::myVector<std::string> DataProcessing::GetTop5(custom::myVector<std::string>& searchResults)
 {
 	int count = 0;
-	custom::myVector<std::wstring> temp;
+	custom::myVector<std::string> temp;
 	for (int i = 0; i < searchResults.size(); ++i) {
 		if (count == 5) break;
 
-		std::wstring url = searchResults[i].substr(searchResults[i].find(L": http") + 2, searchResults[i].length());
-		if (url.find(L"/browse/") != url.npos) continue;
+		std::string url = searchResults[i].substr(searchResults[i].find(": http") + 2, searchResults[i].length());
+		if (url.find("/browse/") != url.npos) continue;
 
-		std::wstring tempStr = searchResults[i];
+		std::string tempStr = searchResults[i];
 		temp.push_back(tempStr);
 		++count;
 	}
 	return temp;
 }
-void DataProcessing::GetDownloadUrl(custom::myVector<std::wstring>& data) {
-	std::wstring cmd = data[0];
-	ShellExecute(NULL, NULL, cmd.c_str(), NULL, NULL, SW_HIDE);
+void DataProcessing::GetDownloadUrl(custom::myVector<std::string>& data) {
+	std::string cmd = data[0];
+	ShellExecuteA(NULL, NULL, cmd.c_str(), NULL, NULL, SW_HIDE);
 }

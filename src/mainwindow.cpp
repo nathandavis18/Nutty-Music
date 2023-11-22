@@ -57,16 +57,16 @@ void MyWindow::OnIdle(wxIdleEvent&) {
 /// <param name=""></param>
 void MyWindow::PressedEnter(wxCommandEvent&) {
 	clearPrevSearch();
-	std::wstring search = text->GetValue().ToStdWstring();
+	std::string search = text->GetValue().ToStdString();
 	if (search.find_first_not_of(' ') != search.npos) {
 		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results));
 		t.detach();
 	}
 }
 
-void MyWindow::StartSearch(const std::wstring searchString, custom::myVector<std::wstring>& vecResults) {
+void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults) {
 	m.lock();
-	custom::myVector<std::wstring> temp;
+	custom::myVector<std::string> temp;
 	temp = processData.GetSearchResults(searchString, doneSearching, isSearching); //results contains all the data, now we need to parse it
 	temp = processData.GetTop5(temp);
 	processData.GetDownloadUrl(temp);

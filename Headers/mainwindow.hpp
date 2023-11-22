@@ -34,7 +34,7 @@ private:
 	MyFrame* myFrame;
 	MusicController music;
 	DataProcessing processData;
-	custom::myVector<std::wstring> results;
+	custom::myVector<std::string> results;
 	custom::myVector<std::string> urls;
 	custom::myVector<wxStaticText*> labels;
 	custom::myVector<wxButton*> playButtons;
@@ -53,7 +53,7 @@ private:
 	void playPauseBtnClick(wxCommandEvent& event);
 	void forwardSkipBtnClick(wxCommandEvent& event);
 	void reverseSkipBtnClick(wxCommandEvent& event);
-	void StartSearch(const std::wstring, custom::myVector<std::wstring>&);
+	void StartSearch(const std::string, custom::myVector<std::string>&);
 	void clearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
