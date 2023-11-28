@@ -13,3 +13,19 @@ x64/Debug
 /Debug/Nutty Music.tlog
 /Debug
 /ytdlp/outputs.txt
+*.txt
+/Python Libs/idna/__pycache__
+/Python Libs/charset_normalizer/__pycache__
+/Python Libs/charset_normalizer/cli/__pycache__
+/Python Libs/certifi/__pycache__
+/Python Libs/requests/__pycache__
+/Python Libs/urllib3/contrib/__pycache__
+/Python Libs/urllib3/util/__pycache__
+/Python Libs/urllib3/__pycache__
+/Python Libs/ytmusicapi/auth/__pycache__
+/Python Libs/ytmusicapi/mixins/__pycache__
+/Python Libs/ytmusicapi/parsers/__pycache__
+/Python Libs/ytmusicapi/__pycache__
+/ytdlp/ffmpeg.exe
+/ytdlp/ffprobe.exe
+/ytdlp/*.exe

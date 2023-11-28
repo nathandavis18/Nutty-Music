@@ -34,21 +34,20 @@ MyWindow::MyWindow() : myFrame(new MyFrame()) {
 /// <param name="evt"></param>
 void MyWindow::OnIdle(wxIdleEvent&) {
 	if (doneSearching) {
-		std::filesystem::remove("ytdlp\\outputs.txt");
+		std::filesystem::remove("ytdlp\\searchResults.txt");
 		searchingLabel->Show(false);
 		doneSearching = false;
-		createButton(0, "vidID");
-		createLabels(0, "sub");
+		createButtons(results);
+		createLabels(results);
 		text->Enable();
-		wxMessageBox(results[1]);
+		//wxMessageBox(results[0]);
 		return;
 	}
-	if (isSearching) {
+	else if (isSearching) {
 		text->Disable();
 		searchingLabel->Show(true);
 		return;
-	} 
-	return;
+	}
 }
 
 /// <summary>
@@ -59,18 +58,18 @@ void MyWindow::PressedEnter(wxCommandEvent&) {
 	clearPrevSearch();
 	std::string search = text->GetValue().ToStdString();
 	if (search.find_first_not_of(' ') != search.npos) {
-		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results));
+		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results), std::ref(doneSearching), std::ref(isSearching));
 		t.detach();
 	}
 }
 
-void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults) {
+void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults, bool& doneWithSearch, bool& searching) {
 	m.lock();
-	custom::myVector<std::string> temp;
-	temp = processData.GetSearchResults(searchString, doneSearching, isSearching); //results contains all the data, now we need to parse it
-	temp = processData.GetTop5(temp);
-	processData.GetDownloadUrl(temp);
+	bool x = true;
+	vecResults = processData.GetSearchResults(searchString, doneWithSearch, searching);//results contains all the data, now we need to parse it
+	urls = processData.GetDownloadUrl(vecResults, x);
 	m.unlock();
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp & del /Q *.txt", NULL, SW_HIDE);
 	wxWakeUpIdle(); //If the app is idle, this calls the idle function
 }
 
@@ -79,15 +78,16 @@ void MyWindow::StartSearch(const std::string searchString, custom::myVector<std:
 /// </summary>
 /// <param name="index"></param>
 /// <param name="url"></param>
-void MyWindow::createButton(int index, std::string url) {
-	wxButton* playButton = new wxButton(myFrame, BUTTON + index + playButtonIndexOffset, "Play", wxPoint(900, 50 + (50 * index)), wxSize(75, 25));
-	playButton->Bind(wxEVT_BUTTON, &MyWindow::playBtnClick, this);
-	playButtons.push_back(playButton);
+void MyWindow::createButtons(custom::myVector<std::string>& searchResults) {
+	for (int i = 0; i < searchResults.size(); ++i) {
+		wxButton* playButton = new wxButton(myFrame, BUTTON + i + playButtonIndexOffset, "Play", wxPoint(900, 50 + (50 * i)), wxSize(75, 25));
+		playButton->Bind(wxEVT_BUTTON, &MyWindow::playBtnClick, this);
+		playButtons.push_back(playButton);
 
-	wxButton* addQueueButton = new wxButton(myFrame, BUTTON + index + addQueueButtonIndexOffset, "Add to Queue", wxPoint(1000, 50 + (50 * index)), wxSize(100, 25));
-	addQueueButton->Bind(wxEVT_BUTTON, &MyWindow::queueBtnClick, this);
-	addQueueButtons.push_back(addQueueButton);
-	//urls.push_back(url);
+		wxButton* addQueueButton = new wxButton(myFrame, BUTTON + i + addQueueButtonIndexOffset, "Add to Queue", wxPoint(1000, 50 + (50 * i)), wxSize(100, 25));
+		addQueueButton->Bind(wxEVT_BUTTON, &MyWindow::queueBtnClick, this);
+		addQueueButtons.push_back(addQueueButton);
+	}
 }
 
 /// <summary>
@@ -95,9 +95,12 @@ void MyWindow::createButton(int index, std::string url) {
 /// </summary>
 /// <param name="index"></param>
 /// <param name="title"></param>
-void MyWindow::createLabels(int index, std::string title) {
-	wxStaticText* st = new wxStaticText(myFrame, LABEL + index + songTitleLabelIndexOffset, title, wxPoint(500, 50 + (50 * index)), wxSize(300, 50));
-	labels.push_back(st);
+void MyWindow::createLabels(custom::myVector<std::string>& searchResults) {
+	for (int i = 0; i < searchResults.size(); ++i) {
+		std::string song = searchResults[i].substr(0, searchResults[i].find("BREAKPOINT"));
+		wxStaticText* st = new wxStaticText(myFrame, LABEL + i + songTitleLabelIndexOffset, song, wxPoint(500, 50 + (50 * i)), wxSize(300, 50));
+		labels.push_back(st);
+	}
 }
 
 /// <summary>

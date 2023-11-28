@@ -46,14 +46,14 @@ private:
 
 	//Functions to control the actions of the UI
 	void PressedEnter(wxCommandEvent& event);
-	void createButton(int index, std::string url);
-	void createLabels(int index, std::string title);
+	void createButtons(custom::myVector<std::string>& searchResults);
+	void createLabels(custom::myVector<std::string>& searchResults);
 	void playBtnClick(wxCommandEvent& event);
 	void queueBtnClick(wxCommandEvent& event);
 	void playPauseBtnClick(wxCommandEvent& event);
 	void forwardSkipBtnClick(wxCommandEvent& event);
 	void reverseSkipBtnClick(wxCommandEvent& event);
-	void StartSearch(const std::string, custom::myVector<std::string>&);
+	void StartSearch(const std::string, custom::myVector<std::string>&, bool&, bool&);
 	void clearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
@@ -64,5 +64,6 @@ private:
 	static constexpr int songTitleLabelIndexOffset = 25;
 	bool doneSearching = false;
 	bool isSearching = false;
+	bool gettingUrls = false;
 	std::mutex m;
 };

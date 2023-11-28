@@ -61,7 +61,7 @@ namespace custom {
 
         myVector& operator=(const myVector& cpy) noexcept { //Copy assignment
             m_capacity = cpy.capacity();
-            buffer = traits::allocate(m_capacity);
+            buffer = traits::allocate(allocator, m_capacity);
             m_finish = buffer;
             for (int i = 0; i < cpy.size(); ++i) {
                 traits::construct(allocator, m_finish++, *(cpy.buffer + i));
@@ -80,7 +80,7 @@ namespace custom {
 
         myVector& operator=(std::initializer_list<value_type> il) noexcept { //Initializer List assignment
             m_capacity = il.end() - il.begin();
-            buffer = traits::allocate(m_capacity);
+            buffer = traits::allocate(allocator, m_capacity);
             m_finish = buffer;
             auto it = il.begin();
             while(it != il.end()) {
@@ -194,7 +194,7 @@ namespace custom {
             if (m_capacity == size()) return; //Already properly shrunk
 
             size_t tmpCapacity = size();
-            pointer newBuffer = traits::allocate(tmpCapacity);
+            pointer newBuffer = traits::allocate(allocator, tmpCapacity);
             pointer newFinish = newBuffer;
             for (int i = 0; i < size(); ++i) {
                 traits::construct(allocator, newFinish++, std::move_if_noexcept(*(buffer + i)));
