@@ -27,3 +27,7 @@ x64/Debug
 /ytdlp/*.exe
 /.vs/Nutty Music/FileContentIndex
 /.vs/Nutty Music/v17/ipch/AutoPCH
+*.db
+*.db-shm
+*.db-wal
+*.opendb
