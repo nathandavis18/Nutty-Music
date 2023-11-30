@@ -40,23 +40,11 @@ custom::myVector<std::string> DataProcessing::GetDownloadUrl(custom::myVector<st
 	for (int i = 0; i < data.size(); ++i) {
 		std::string url = "\"" + data[i].substr(data[i].find("BREAKPOINT") + 11, 12) + "\"";
 		std::string cmd = "/c cd ytdlp & yt-dlp --flat-playlist --no-warnings --default-search gvsearch --print-to-file \"%(urls)s\" temp" + std::to_string(i) + ".txt --skip-download " + url;
-		if (i + 1 >= data.size()) {
-			SHELLEXECUTEINFOA sei = { 0 };
-			sei.cbSize = sizeof(SHELLEXECUTEINFO);
-			sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-			sei.hwnd = NULL;
-			sei.lpVerb = NULL;
-			sei.lpFile = "cmd.exe";
-			sei.lpParameters = cmd.c_str();
-			sei.nShow = SW_HIDE;
-			sei.hInstApp = NULL;
-			ShellExecuteExA(&sei);
-			WaitForSingleObject(sei.hProcess, INFINITE);
-			CloseHandle(sei.hProcess);
-		}
-		else {
-			ShellExecuteA(NULL, NULL, "cmd.exe", cmd.c_str(), NULL, SW_HIDE);
-		}
+		ShellExecuteA(NULL, NULL, "cmd.exe", cmd.c_str(), NULL, SW_HIDE);
+	}
+
+	while (!YtdlpDone()) {
+		Sleep(50);
 	}
 
 	custom::myVector<std::string> temp;
@@ -75,6 +63,18 @@ custom::myVector<std::string> DataProcessing::GetDownloadUrl(custom::myVector<st
 			++lineNumber;
 		}
 	}
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp & del /Q *.txt", NULL, SW_HIDE);
 	gettingUrls = false;
 	return temp;
+}
+
+bool DataProcessing::YtdlpDone() {
+	bool a = std::filesystem::exists("ytdlp\\temp0.txt");
+	bool b = std::filesystem::exists("ytdlp\\temp1.txt");
+	bool c = std::filesystem::exists("ytdlp\\temp2.txt");
+	bool d = std::filesystem::exists("ytdlp\\temp3.txt");
+	bool e = std::filesystem::exists("ytdlp\\temp4.txt");
+
+	bool z = (a && b && c && d && e);
+	return z;
 }

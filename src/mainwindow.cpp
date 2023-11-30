@@ -8,7 +8,7 @@
 
 wxIMPLEMENT_APP(MyApp);
 
-MyWindow::MyWindow() : myFrame(new MyFrame()) {
+MyWindow::MyWindow() : myFrame(new MyFrame()), music(MusicController(&gettingUrls)), queueSongID(-500), playSongID(-500), tempQueueList(0) {
 	myFrame->Show(true);
 	text = new wxTextCtrl(myFrame, SEARCH_ID, wxEmptyString, wxPoint(300, 540), wxSize(600, 100), wxTE_PROCESS_ENTER);
 	wxButton* playPauseButton = new wxButton(myFrame, wxID_ANY, "|> ||", wxPoint(100, 100), wxSize(200, 200));
@@ -33,6 +33,7 @@ MyWindow::MyWindow() : myFrame(new MyFrame()) {
 /// </summary>
 /// <param name="evt"></param>
 void MyWindow::OnIdle(wxIdleEvent&) {
+	wxWakeUpIdle();
 	if (doneSearching) {
 		std::filesystem::remove("ytdlp\\searchResults.txt");
 		searchingLabel->Show(false);
@@ -48,6 +49,19 @@ void MyWindow::OnIdle(wxIdleEvent&) {
 		searchingLabel->Show(true);
 		return;
 	}
+	if (!gettingUrls) {
+		if (waitingPlaySong) {
+			waitingSongStart = true;
+			waitingPlaySong = false;
+			PlaySong();
+		}
+		if (waitingAddQueue && !waitingSongStart) {
+			AddToQueue();
+		}
+	}
+	if (music.isSongDone()) {
+		music.skipForward();
+	}
 }
 
 /// <summary>
@@ -58,19 +72,21 @@ void MyWindow::PressedEnter(wxCommandEvent&) {
 	clearPrevSearch();
 	std::string search = text->GetValue().ToStdString();
 	if (search.find_first_not_of(' ') != search.npos) {
-		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results), std::ref(doneSearching), std::ref(isSearching));
+		std::thread t(&MyWindow::StartSearch, this, search, std::ref(results), std::ref(doneSearching), std::ref(isSearching), std::ref(gettingUrls));
 		t.detach();
 	}
 }
 
-void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults, bool& doneWithSearch, bool& searching) {
+void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults, bool& doneWithSearch, bool& searching, bool& gettingDownloadUrls) {
 	m.lock();
-	bool x = true;
 	vecResults = processData.GetSearchResults(searchString, doneWithSearch, searching);//results contains all the data, now we need to parse it
-	urls = processData.GetDownloadUrl(vecResults, x);
+	urls = processData.GetDownloadUrl(vecResults, gettingDownloadUrls);
+	for (int i = 0; i < vecResults.size(); ++i) {
+		vecResults[i] = vecResults[i].substr(0, vecResults[i].find("BREAKPOINT") - 1);
+	}
 	m.unlock();
-	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp & del /Q *.txt", NULL, SW_HIDE);
-	wxWakeUpIdle(); //If the app is idle, this calls the idle function
+	std::this_thread::sleep_for(std::chrono::milliseconds(50)); //Makes sure ytdlp has had enough time to grab the urls.
+	wxWakeUpIdle(); //Wakes the app up if it is idling
 }
 
 /// <summary>
@@ -108,11 +124,28 @@ void MyWindow::createLabels(custom::myVector<std::string>& searchResults) {
 /// </summary>
 /// <param name="event"></param>
 void MyWindow::playBtnClick(wxCommandEvent& event) {
-	wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
-	int id = event.GetId() - wxID_HIGHEST - 1;
-	//std::string cmd = "-x --audio-format mp3 -o temp\\%(title)s.mp3 -f ba --use-extractors youtube --downloader ffmpeg -N 4 --throttled-rate 100000K " + urls[id];
-	//wxExecute("cmd.exe /c cd ytdlp & yt-dlp " + cmd, output, errors, wxEXEC_ASYNC);
-	//music.forcePlay(urls[id], songTitles[id]);
+	playSongID = event.GetId() - BUTTON - playButtonIndexOffset;
+	if (gettingUrls) {
+		waitingPlaySong = true;
+	}
+	else {
+		PlaySong();
+	}
+}
+
+void MyWindow::PlaySong() {
+	if (!std::filesystem::is_directory("ytdlp\\temp")) {
+		std::filesystem::create_directory("ytdlp\\temp");
+	}
+	else {
+		wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.wav & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
+	}
+
+	wxExecute("cmd.exe /c cd ytdlp & ffmpeg -i \"" + urls[playSongID] + "\" \"temp\\" + results[playSongID] + ".wav\"", output, errors, wxEXEC_ASYNC);
+	music.setDuration(results[playSongID]);
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	music.forcePlay(urls[playSongID], results[playSongID]);
+	waitingSongStart = false;
 }
 
 /// <summary>
@@ -120,8 +153,25 @@ void MyWindow::playBtnClick(wxCommandEvent& event) {
 /// </summary>
 /// <param name="event"></param>
 void MyWindow::queueBtnClick(wxCommandEvent& event) {
-	int id = event.GetId() - wxID_HIGHEST - 15;
-	//music.addToQueue(urls[id], songTitles[id]);
+	queueSongID = event.GetId() - BUTTON - addQueueButtonIndexOffset;
+	tempQueueList.push_back(queueSongID);
+	if (gettingUrls) {
+		waitingAddQueue = true;
+	}
+	else {
+		AddToQueue();
+	}
+}
+
+void MyWindow::AddToQueue() {
+	waitingAddQueue = false;
+	if (!std::filesystem::is_directory("ytdlp\\temp")) {
+		std::filesystem::create_directory("ytdlp\\temp");
+	}
+	for (const int& x : tempQueueList) {
+		music.addToQueue(urls[x], results[x]);
+	}
+	tempQueueList.clear();
 }
 
 /// <summary>
@@ -161,6 +211,7 @@ void MyWindow::playPauseBtnClick(wxCommandEvent&) {
 /// </summary>
 /// <param name=""></param>
 void MyWindow::forwardSkipBtnClick(wxCommandEvent&) {
+	std::this_thread::sleep_for(std::chrono::milliseconds(50)); //Just so you can't go crazy on the skip button and break the app
 	music.skipForward();
 }
 
@@ -169,6 +220,7 @@ void MyWindow::forwardSkipBtnClick(wxCommandEvent&) {
 /// </summary>
 /// <param name=""></param>
 void MyWindow::reverseSkipBtnClick(wxCommandEvent&) {
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	music.skipBackward();
 }
 
@@ -178,7 +230,14 @@ void MyWindow::reverseSkipBtnClick(wxCommandEvent&) {
 /// </summary>
 /// <param name=""></param>
 void MyWindow::OnClose(wxCloseEvent&) {
+	myFrame->Show(false);
 	music.closePlayer();
-	wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp\\temp & del /Q *.wav", NULL, SW_HIDE);
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp\\temp & del /Q *.mp3", NULL, SW_HIDE);
+	while (isSearching || gettingUrls) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(10)); //Give the thread time to finish before fully closing
+	}
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp & del /Q *.txt", NULL, SW_HIDE);
 	myFrame->Destroy();
 }

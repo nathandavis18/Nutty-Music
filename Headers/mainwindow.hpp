@@ -25,6 +25,10 @@ private:
 		SEARCH_ID = 2, BUTTON = 3, LABEL = 4
 	};
 
+	bool doneSearching = false;
+	bool isSearching = false;
+	bool gettingUrls = false;
+
 	/// <summary>
 	/// ====================================================================
 	/// A LOT OF THIS NEEDS TO BE CLEANED UP, THIS IS NEXT ON THE TO-DO LIST
@@ -50,20 +54,27 @@ private:
 	void createLabels(custom::myVector<std::string>& searchResults);
 	void playBtnClick(wxCommandEvent& event);
 	void queueBtnClick(wxCommandEvent& event);
+	void PlaySong();
+	void AddToQueue();
 	void playPauseBtnClick(wxCommandEvent& event);
 	void forwardSkipBtnClick(wxCommandEvent& event);
 	void reverseSkipBtnClick(wxCommandEvent& event);
-	void StartSearch(const std::string, custom::myVector<std::string>&, bool&, bool&);
+	void StartSearch(const std::string, custom::myVector<std::string>&, bool&, bool&, bool&);
 	void clearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
+
+	bool waitingAddQueue = false;
+	bool waitingPlaySong = false;
+	bool waitingSongStart = false;
+	int queueSongID;
+	int playSongID;
+	
+	custom::myVector<int> tempQueueList;
 
 
 	static constexpr int playButtonIndexOffset = 1;
 	static constexpr int addQueueButtonIndexOffset = 15;
 	static constexpr int songTitleLabelIndexOffset = 25;
-	bool doneSearching = false;
-	bool isSearching = false;
-	bool gettingUrls = false;
 	std::mutex m;
 };
