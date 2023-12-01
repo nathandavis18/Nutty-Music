@@ -23,15 +23,6 @@ MyFrame::MyFrame() : wxFrame(NULL, wxID_ANY, "Nutty Music", wxDefaultPosition, w
 	CreateStatusBar();
 	SetStatusText("Welcome to wxWidgets!");
 
-	Bind(wxEVT_CLOSE_WINDOW, &MyFrame::OnClose, this);
 	Bind(wxEVT_MENU, [=](wxCommandEvent&) { wxMessageBox("Test", "Testing Test", wxOK | wxICON_INFORMATION);  }, wxID_ABOUT);
 	Bind(wxEVT_MENU, [=](wxCommandEvent&) { wxLogMessage("Hello");  }, ID_Hello);
-}
-
-void MyFrame::OnClose(wxCloseEvent& event) {
-	std::filesystem::remove("ytdlp/temp1.wav"); 
-	std::filesystem::remove("ytdlp/temp2.wav");
-	std::filesystem::remove("ytdlp/temp3.wav");
-
-	Destroy();
 }
