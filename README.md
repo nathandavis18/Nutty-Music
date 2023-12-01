@@ -28,4 +28,8 @@ These executables need to be placed in the root of the ytdlp folder.
 
 For the release version, these executables will be provided for you (once I am satisfied with the result and upload a release version).
 
+May need to add the following to the environment variable in project properties:
+
+    PATH=$(ProjectDir)\dll;%PATH%
+
 Requires VC++ and Python 3.7+.
