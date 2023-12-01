@@ -1,81 +1,99 @@
 #include "../Headers/MusicController.hpp"
 
-MusicController::MusicController(bool* downloading) : player(winrt::Windows::Media::Playback::MediaPlayer()), tempPlayer(winrt::Windows::Media::Playback::MediaPlayer()), 
-													queue(), isDownloadingSong(downloading) {}
+MusicController::MusicController() : player(winrt::Windows::Media::Playback::MediaPlayer()), queue(), 
+					duration(winrt::Windows::Foundation::TimeSpan(0)) {}
 
-void MusicController::addToQueue(std::string& songUrl, std::string songTitle, bool isLocalSong) {
+void MusicController::AddToQueue(const std::string& songUrl, const std::string& songTitle, bool isLocalSong) {
 	Song s;
 	s.songTitle = songTitle;
 	s.isLocal = isLocalSong;
-	s.url = songUrl;
-	s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".mp3");
+	if (isLocalSong) {
+		s.path = songUrl;
+	}
+	else {
+		s.url = songUrl;
+		s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".mp3");
+	}
 	queue.push_back(s);
 
-	checkQueue();
+	CheckQueue();
 }
 
-void MusicController::forcePlay(std::string& songUrl, std::string songTitle, bool isLocalSong) {
+void MusicController::ForcePlay(const std::string& songUrl, const std::string& songTitle, bool isLocalSong) {
 	queue.clear();
 	Song s;
 	s.isLocal = isLocalSong;
 	s.songTitle = songTitle;
-	s.url = songUrl;
-	s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".wav");
+	if (isLocalSong) {
+		s.path = songUrl;
+	}
+	else {
+		s.url = songUrl;
+		s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".wav");
+	}
 	queue.push_back(s);
 
 	currentQueueIndex = -1;
-	skipForward();
+	SkipForward();
 }
 
-void MusicController::playSong(Song& s) {
-	std::filesystem::path path = s.path;
-	winrt::Windows::Foundation::Uri uri(path.c_str());
-	winrt::Windows::Media::Core::MediaSource source = winrt::Windows::Media::Core::MediaSource::CreateFromUri(uri);
-
-	player.Source(source);
+void MusicController::PlaySong() {
 	player.Play();
 	playerActive = true;
 }
 
-void MusicController::pauseSong() {
+void MusicController::PauseSong() {
 	if (player.CanPause()) {
 		player.Pause();
 		pauseState = true;
 	}
 }
 
-void MusicController::resumeSong() {
-	isSongDone();
+void MusicController::ResumeSong() {
+	IsSongDone();
 	player.Play();
 	pauseState = false;
 }
 
-void MusicController::closePlayer() {
+void MusicController::ClosePlayer() {
 	player.Source(nullptr);
 	player.Close();
 	queue.clear();
 }
 
-void MusicController::skipForward() {
+void MusicController::SkipForward() {
 	if (currentQueueIndex < static_cast<int>(queue.size() - 1)) {
 		++currentQueueIndex;
-		playSong(queue[currentQueueIndex]);
+		SetDuration(queue[currentQueueIndex].path);
+		PlaySong();
 	}
-	checkQueue();
+	else if (currentQueueIndex == queue.size() - 1) {
+		currentQueueIndex = 0;
+		SetDuration(queue[currentQueueIndex].path);
+		PlaySong();
+	}
+	CheckQueue();
 }
 
-void MusicController::skipBackward() {
-	if (currentQueueIndex > 0) {
+void MusicController::SkipBackward() {
+	if (player.PlaybackSession().Position() > winrt::Windows::Foundation::TimeSpan(fiveSeconds)) {
+		RestartSong();
+	}
+	else{
 		--currentQueueIndex;
-		playSong(queue[currentQueueIndex]);
+		if (currentQueueIndex < 0) {
+			currentQueueIndex = queue.size() - 1;
+		}
+		SetDuration(queue[currentQueueIndex].path);
+		PlaySong();
 	}
-	checkQueue();
+	CheckQueue();
 }
 
-void MusicController::checkQueue() {
+void MusicController::CheckQueue() {
 	for (int i = currentQueueIndex; i < static_cast<int>(queue.size()); ++i) {
 		if (i > 0) {
-			if (i - 3 <= currentQueueIndex && !std::filesystem::exists(queue[i].path)) {
+			if (i - 3 <= currentQueueIndex && !std::filesystem::exists(queue[i].path) && !queue[i].isLocal) {
 				std::string cmd = " -i \"" + queue[i].url + "\" \"ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
 				std::string cmdWav = "-i \"" + queue[i].url + "\" \"temp\\" + queue[i].songTitle + ".wav\"";
 				ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
@@ -90,7 +108,7 @@ void MusicController::checkQueue() {
 		}
 	}
 	for (int i = currentQueueIndex - 1; i > 0; --i) {
-		if (i + 3 >= currentQueueIndex && !std::filesystem::exists(queue[i].path)) {
+		if (i + 3 >= currentQueueIndex && !std::filesystem::exists(queue[i].path) && !queue[i].isLocal) {
 			std::string cmd = " -i \"" + queue[i].url + "\" \"ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
 			std::string cmdWav = "-i \"" + queue[i].url + "\" \"temp\\" + queue[i].songTitle + ".wav\"";
 			ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
@@ -105,15 +123,15 @@ void MusicController::checkQueue() {
 	}
 }
 
-bool MusicController::isPaused() {
+bool MusicController::IsPaused() {
 	return pauseState;
 }
 
-bool MusicController::isActive() {
+bool MusicController::IsActive() {
 	return playerActive;
 }
 
-bool MusicController::isSongDone() {
+bool MusicController::IsSongDone() {
 	if (playerActive) {
 		auto y = player.PlaybackSession().Position();
 		if(y >= duration){
@@ -123,12 +141,37 @@ bool MusicController::isSongDone() {
 	return false;
 }
 
-void MusicController::setDuration(std::string& song) {
-	std::filesystem::path path = std::filesystem::current_path() / ("ytdlp\\temp\\" + song + ".wav");
-	winrt::Windows::Foundation::Uri uri(path.c_str());
+void MusicController::SetDuration(const std::wstring& song) {
+	winrt::Windows::Foundation::Uri uri(song.c_str());
 	winrt::Windows::Media::Core::MediaSource source = winrt::Windows::Media::Core::MediaSource::CreateFromUri(uri);
 
 	player.Source(source);
 	Sleep(250);
 	duration = player.PlaybackSession().NaturalDuration();
+}
+
+void MusicController::RestartSong() {
+	player.PlaybackSession().Position(winrt::Windows::Foundation::TimeSpan(0));
+}
+
+void MusicController::ChangeVolume(const double change) {
+	auto x = player.Volume();
+	x += change;
+	if (x > 1.0) x = 1.0;
+	if (x < 0.0) x = 0.0;
+	player.Volume(x);
+}
+
+const std::string& MusicController::GetCurrentSongTitle() const& {
+	if (queue.size() > 0) {
+		return queue[currentQueueIndex].songTitle;
+	}
+	return "";
+}
+
+const std::string& MusicController::GetNextSongTitle() const& {
+	if (queue.size() > 0) {
+		return queue[(currentQueueIndex + 1) % queue.size()].songTitle;
+	}
+	return "";
 }

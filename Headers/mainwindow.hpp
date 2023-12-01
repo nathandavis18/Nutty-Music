@@ -46,35 +46,44 @@ private:
 
 	wxTextCtrl* text;
 	wxStaticText* searchingLabel;
+	wxStaticText* nowPlayingLabel;
+	wxStaticText* upNextLabel;
 
 
 	//Functions to control the actions of the UI
 	void PressedEnter(wxCommandEvent& event);
-	void createButtons(custom::myVector<std::string>& searchResults);
-	void createLabels(custom::myVector<std::string>& searchResults);
-	void playBtnClick(wxCommandEvent& event);
-	void queueBtnClick(wxCommandEvent& event);
+	void CreateButtons(custom::myVector<std::string>& searchResults);
+	void CreateLabels(custom::myVector<std::string>& searchResults);
+	void PlayBtnClick(wxCommandEvent& event);
+	void QueueBtnClick(wxCommandEvent& event);
 	void PlaySong();
 	void AddToQueue();
-	void playPauseBtnClick(wxCommandEvent& event);
-	void forwardSkipBtnClick(wxCommandEvent& event);
-	void reverseSkipBtnClick(wxCommandEvent& event);
+	void PlayPauseBtnClick(wxCommandEvent& event);
+	void ForwardSkipBtnClick(wxCommandEvent& event);
+	void ReverseSkipBtnClick(wxCommandEvent& event);
 	void StartSearch(const std::string, custom::myVector<std::string>&, bool&, bool&, bool&);
-	void clearPrevSearch();
+	void ClearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
+	void PlayLocalFilesBtnClick(wxCommandEvent& event);
+	void AddQueueLocalFilesBtnClick(wxCommandEvent& event);
+	void UpdateNowPlayingUpNext();
 
+	//If waiting on the songs to be downloaded, set to true
 	bool waitingAddQueue = false;
 	bool waitingPlaySong = false;
 	bool waitingSongStart = false;
-	int queueSongID;
-	int playSongID;
-	
-	custom::myVector<int> tempQueueList;
 
+	int queueSongID; //The id of the song to be added to queue
+	int playSongID; //The id of the song to be played
+	
+	custom::myVector<int> tempQueueList; //If waitingAddQueue is true, then queueSongID gets added to vector.
+										 //Vector is cleared after being used
 
 	static constexpr int playButtonIndexOffset = 1;
 	static constexpr int addQueueButtonIndexOffset = 15;
 	static constexpr int songTitleLabelIndexOffset = 25;
+	static constexpr bool isLocalFile = true;
+
 	std::mutex m;
 };

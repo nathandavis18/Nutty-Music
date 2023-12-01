@@ -39,7 +39,7 @@ custom::myVector<std::string> DataProcessing::GetDownloadUrl(custom::myVector<st
 	gettingUrls = true;
 	for (int i = 0; i < data.size(); ++i) {
 		std::string url = "\"" + data[i].substr(data[i].find("BREAKPOINT") + 11, 12) + "\"";
-		std::string cmd = "/c cd ytdlp & yt-dlp --flat-playlist --no-warnings --default-search gvsearch --print-to-file \"%(urls)s\" temp" + std::to_string(i) + ".txt --skip-download " + url;
+		std::string cmd = "/c cd ytdlp & yt-dlp --flat-playlist --no-warnings --default-search gvsearch --print-to-file \"%(urls)s\" temp" + std::to_string(i) + ".txt --skip-download -- " + url;
 		ShellExecuteA(NULL, NULL, "cmd.exe", cmd.c_str(), NULL, SW_HIDE);
 	}
 
@@ -75,6 +75,41 @@ bool DataProcessing::YtdlpDone() {
 	bool d = std::filesystem::exists("ytdlp\\temp3.txt");
 	bool e = std::filesystem::exists("ytdlp\\temp4.txt");
 
-	bool z = (a && b && c && d && e);
+	bool z = (a && b && c && d && e); //If all the files exist
 	return z;
+}
+
+/// <summary>
+/// Reference for opening a file explorer dialog box in windows API
+/// https://learn.microsoft.com/en-us/windows/win32/learnwin32/example--the-open-dialog-box
+/// </summary>
+/// <returns></returns>
+std::filesystem::path DataProcessing::BrowseFiles() {
+	std::filesystem::path returnPath;
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr)) {
+		IFileDialog* fileOpen;
+
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&fileOpen));
+		if (SUCCEEDED(hr)) {
+			hr = fileOpen->Show(NULL);
+			if (SUCCEEDED(hr)) {
+				IShellItem* item;
+				hr = fileOpen->GetResult(&item);
+				if (SUCCEEDED(hr)) {
+					PWSTR filePath;
+					hr = item->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
+
+					if (SUCCEEDED(hr)) {
+						returnPath = filePath;
+						CoTaskMemFree(filePath);
+					}
+					item->Release();
+				}
+			}
+			fileOpen->Release();
+		}
+		CoUninitialize();
+	}
+	return returnPath;
 }
