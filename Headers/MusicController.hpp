@@ -34,7 +34,8 @@ public:
 	bool IsSongDone();
 	void SetDuration(const std::wstring&);
 	void RestartSong();
-	void ChangeVolume(const double);
+	void ChangeVolume(const bool);
+	double GetCurrentVolume();
 	const std::string& GetCurrentSongTitle() const&;
 	const std::string& GetNextSongTitle() const&;
 private:
@@ -44,6 +45,7 @@ private:
 	bool pauseState = false;
 	bool playerActive = false;
 	int currentQueueIndex = -1;
+	double currentVolume = 0.5;
 
 	static constexpr size_t fiveSeconds = 50000000;
 };
