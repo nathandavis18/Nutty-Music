@@ -1,5 +1,12 @@
 #include "../Headers/DataProcessing.hpp"
 
+/// <summary>
+/// Gets the song title, artist, download url, and any other available information and stores it in a vector.
+/// </summary>
+/// <param name="search">The search string from the user's input</param>
+/// <param name="isDone">A bool to track the status of this function</param>
+/// <param name="isSearching">A bool to know if the searching label should be displayed</param>
+/// <returns>Returns a custom vector of the search results</returns>
 custom::myVector<std::string> DataProcessing::GetSearchResults(const std::string& search, bool& isDone, bool& isSearching){
 	isSearching = true;
 	custom::myVector<std::string> temp;
@@ -35,6 +42,12 @@ custom::myVector<std::string> DataProcessing::GetSearchResults(const std::string
 	return temp;
 }
 
+/// <summary>
+/// Gets the download URLs for the songs and stores them in a vector.
+/// </summary>
+/// <param name="data">The list of strings containing all the song information</param>
+/// <param name="gettingUrls">A boolean used to track the status of the urls</param>
+/// <returns>Returns a custom vector of the download urls</returns>
 custom::myVector<std::string> DataProcessing::GetDownloadUrl(custom::myVector<std::string>& data, bool& gettingUrls) {
 	gettingUrls = true;
 	for (int i = 0; i < data.size(); ++i) {
@@ -68,6 +81,10 @@ custom::myVector<std::string> DataProcessing::GetDownloadUrl(custom::myVector<st
 	return temp;
 }
 
+/// <summary>
+/// Determines if all the downloads have finished. Continuously called until done.
+/// </summary>
+/// <returns></returns>
 bool DataProcessing::YtdlpDone() {
 	bool a = std::filesystem::exists("ytdlp\\temp0.txt");
 	bool b = std::filesystem::exists("ytdlp\\temp1.txt");

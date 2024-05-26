@@ -21,6 +21,13 @@ MyWindow::MyWindow() : myFrame(new MyFrame()), music(MusicController()), queueSo
 	wxButton* playLocalFilesButton = new wxButton(myFrame, wxID_ANY, "Play Local Song", wxPoint(275, 600), wxSize(100, 25));
 	wxButton* addQueueLocalFilesButton = new wxButton(myFrame, wxID_ANY, "Add To Queue", wxPoint(380, 600), wxSize(100, 25));
 
+	wxButton* volumeUpButton = new wxButton(myFrame, VOLUME_UP, "Volume Up", wxPoint(1100, 350), wxSize(100, 100));
+	wxButton* volumeDownButton = new wxButton(myFrame, VOLUME_DOWN, "Volume Down", wxPoint(1100, 525), wxSize(100, 100));
+	currentVolumeLabel = new wxStaticText(myFrame, wxID_ANY, "Volume: 50%", wxPoint(1085, 470), wxSize(100, 50));
+	currentVolumeLabel->SetFont(font);
+	currentVolumeLabel->Show(true);
+
+	font.SetPointSize(15);
 	font.SetWeight(wxFONTWEIGHT_NORMAL);
 	nowPlayingLabel = new wxStaticText(myFrame, wxID_ANY, "Now Playing:   ", wxPoint(25, 25), wxSize(300, 25));
 	upNextLabel = new wxStaticText(myFrame, wxID_ANY, "       Up Next:   ", wxPoint(26, 80), wxSize(300, 25));
@@ -40,16 +47,17 @@ MyWindow::MyWindow() : myFrame(new MyFrame()), music(MusicController()), queueSo
 	reverseSkipButton->Bind(wxEVT_BUTTON, &MyWindow::ReverseSkipBtnClick, this);
 	playLocalFilesButton->Bind(wxEVT_BUTTON, &MyWindow::PlayLocalFilesBtnClick, this);
 	addQueueLocalFilesButton->Bind(wxEVT_BUTTON, &MyWindow::AddQueueLocalFilesBtnClick, this);
+	volumeUpButton->Bind(wxEVT_BUTTON, &MyWindow::ChangeVolume, this);
+	volumeDownButton->Bind(wxEVT_BUTTON, &MyWindow::ChangeVolume, this);
 
 	myFrame->Bind(wxEVT_CLOSE_WINDOW, &MyWindow::OnClose, this);
 	myFrame->Bind(wxEVT_IDLE, &MyWindow::OnIdle, this);
 }
 
 /// <summary>
-/// Controls what happens while the app is idle.
-/// Used to handle the search happening in a secondary thread
+/// Controls what happens while the app is idling
 /// </summary>
-/// <param name="evt"></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::OnIdle(wxIdleEvent&) {
 	wxWakeUpIdle();
 	if (doneSearching) {
@@ -86,7 +94,7 @@ void MyWindow::OnIdle(wxIdleEvent&) {
 /// <summary>
 /// When the user enters a search keyword, start the search in a new thread
 /// </summary>
-/// <param name=""></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::PressedEnter(wxCommandEvent&) {
 	ClearPrevSearch();
 	std::string search = text->GetValue().ToStdString();
@@ -96,6 +104,15 @@ void MyWindow::PressedEnter(wxCommandEvent&) {
 	}
 }
 
+/// <summary>
+/// This function runs on a separate thread as to not lock the GUI.
+/// It searches for songs using yt-dlp and returns the result to the user.
+/// </summary>
+/// <param name="searchString">The string the user enters</param>
+/// <param name="vecResults">The search results</param>
+/// <param name="doneWithSearch">A boolean value that is checked to see if this function is done running</param>
+/// <param name="searching">A boolean to know if the 'is searching' text should be displayed</param>
+/// <param name="gettingDownloadUrls">A boolean to know if the song can be played or not</param>
 void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults, bool& doneWithSearch, bool& searching, bool& gettingDownloadUrls) {
 	m.lock();
 	vecResults = processData.GetSearchResults(searchString, doneWithSearch, searching);//results contains all the data, now we need to parse it
@@ -109,10 +126,9 @@ void MyWindow::StartSearch(const std::string searchString, custom::myVector<std:
 }
 
 /// <summary>
-/// Creates the play and add to queue buttons for each song in the results list
+/// Creates the play and add to queue buttons for each search result returned.
 /// </summary>
-/// <param name="index"></param>
-/// <param name="url"></param>
+/// <param name="searchResults">The strings of search results</param>
 void MyWindow::CreateButtons(custom::myVector<std::string>& searchResults) {
 	for (int i = 0; i < searchResults.size(); ++i) {
 		wxButton* playButton = new wxButton(myFrame, BUTTON + i + playButtonIndexOffset, "Play", wxPoint(1000, 50 + (50 * i)), wxSize(75, 25));
@@ -126,10 +142,9 @@ void MyWindow::CreateButtons(custom::myVector<std::string>& searchResults) {
 }
 
 /// <summary>
-/// Creates the labels for each song in the results list
+/// Creates the song lables so the user knows what each song is, based on a predetermined format
 /// </summary>
-/// <param name="index"></param>
-/// <param name="title"></param>
+/// <param name="searchResults">The strings of all search results</param>
 void MyWindow::CreateLabels(custom::myVector<std::string>& searchResults) {
 	for (int i = 0; i < searchResults.size(); ++i) {
 		std::string song = searchResults[i].substr(0, searchResults[i].find("BREAKPOINT"));
@@ -141,7 +156,7 @@ void MyWindow::CreateLabels(custom::myVector<std::string>& searchResults) {
 /// <summary>
 /// When the play button is clicked, download the song and start it
 /// </summary>
-/// <param name="event"></param>
+/// <param name="event">Button event to get the button's unique ID</param>
 void MyWindow::PlayBtnClick(wxCommandEvent& event) {
 	playSongID = event.GetId() - BUTTON - playButtonIndexOffset;
 	if (gettingUrls) {
@@ -168,9 +183,29 @@ void MyWindow::PlaySong() {
 }
 
 /// <summary>
+/// Button controller for changing the player volume.
+/// Increments by 10%.
+/// </summary>
+/// <param name="event">Empty parameter, required for wxWidgets</param>
+void MyWindow::ChangeVolume(wxCommandEvent& event)
+{
+	bool volumeUp = event.GetId() == VOLUME_UP;
+	if (volumeUp) {
+		music.ChangeVolume(true);
+	}
+	else {
+		music.ChangeVolume(false);
+	}
+
+	int volume = music.GetCurrentVolume() * 100;
+	std::string lblText = "Volume: " + std::to_string(volume) + "%";
+	currentVolumeLabel->SetLabelText(lblText);
+}
+
+/// <summary>
 /// Add song to queue. Song gets downloaded depending on position in queue
 /// </summary>
-/// <param name="event"></param>
+/// <param name="event">The button click event, used to get the button's unique ID</param>
 void MyWindow::QueueBtnClick(wxCommandEvent& event) {
 	queueSongID = event.GetId() - BUTTON - addQueueButtonIndexOffset;
 	tempQueueList.push_back(queueSongID);
@@ -182,6 +217,10 @@ void MyWindow::QueueBtnClick(wxCommandEvent& event) {
 	}
 }
 
+/// <summary>
+/// Button Event Controller for adding a song to the queue list.
+/// If the temp file directory for the music player doesn't exist, it creates it.
+/// </summary>
 void MyWindow::AddToQueue() {
 	waitingAddQueue = false;
 	if (!std::filesystem::is_directory("ytdlp\\temp")) {
@@ -194,6 +233,9 @@ void MyWindow::AddToQueue() {
 	UpdateNowPlayingUpNext();
 }
 
+/// <summary>
+/// Updates the displayed song titles every time a song finishes playing/is skipped.
+/// </summary>
 void MyWindow::UpdateNowPlayingUpNext() {
 	std::string npl = "Now Playing:   ";
 	std::string unl = "       Up Next:   ";
@@ -225,7 +267,7 @@ void MyWindow::ClearPrevSearch() {
 /// <summary>
 /// Resuming and Pausing music button handler
 /// </summary>
-/// <param name=""></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::PlayPauseBtnClick(wxCommandEvent&) {
 	if (music.IsActive()) {
 		if (music.IsPaused()) {
@@ -240,7 +282,7 @@ void MyWindow::PlayPauseBtnClick(wxCommandEvent&) {
 /// <summary>
 /// Forward skip button handler
 /// </summary>
-/// <param name=""></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::ForwardSkipBtnClick(wxCommandEvent&) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(50)); //Just so you can't go crazy on the skip button and break the app
 	music.SkipForward();
@@ -250,13 +292,17 @@ void MyWindow::ForwardSkipBtnClick(wxCommandEvent&) {
 /// <summary>
 /// Reverse Skip button handler
 /// </summary>
-/// <param name=""></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::ReverseSkipBtnClick(wxCommandEvent&) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	music.SkipBackward();
 	UpdateNowPlayingUpNext();
 }
 
+/// <summary>
+/// Opens a file dialog to allow choosing a local song.
+/// </summary>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::PlayLocalFilesBtnClick(wxCommandEvent&) {
 	std::filesystem::path songPath = processData.BrowseFiles();
 
@@ -265,6 +311,10 @@ void MyWindow::PlayLocalFilesBtnClick(wxCommandEvent&) {
 	UpdateNowPlayingUpNext();
 }
 
+/// <summary>
+/// Opens a file dialog to allow choosing a local song to add to queue.
+/// </summary>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::AddQueueLocalFilesBtnClick(wxCommandEvent&) {
 	std::filesystem::path songPath = processData.BrowseFiles();
 
@@ -276,7 +326,7 @@ void MyWindow::AddQueueLocalFilesBtnClick(wxCommandEvent&) {
 /// When the program is closed, make sure everything is properly destroyed and all temp files are cleaned up.
 /// Makes sure the music player is properly closed as well.
 /// </summary>
-/// <param name=""></param>
+/// <param name="">Empty parameter, required for wxWidgets</param>
 void MyWindow::OnClose(wxCloseEvent&) {
 	myFrame->Show(false);
 	music.ClosePlayer();

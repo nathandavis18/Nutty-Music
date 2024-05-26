@@ -22,7 +22,7 @@ public:
 	MyWindow();
 private:
 	enum {
-		SEARCH_ID = 2, BUTTON = 3, LABEL = 4
+		SEARCH_ID = 2, BUTTON = 3, LABEL = 4, VOLUME_UP = 32, VOLUME_DOWN = 33
 	};
 
 	bool doneSearching = false;
@@ -48,6 +48,7 @@ private:
 	wxStaticText* searchingLabel;
 	wxStaticText* nowPlayingLabel;
 	wxStaticText* upNextLabel;
+	wxStaticText* currentVolumeLabel;
 
 
 	//Functions to control the actions of the UI
@@ -57,6 +58,7 @@ private:
 	void PlayBtnClick(wxCommandEvent& event);
 	void QueueBtnClick(wxCommandEvent& event);
 	void PlaySong();
+	void ChangeVolume(wxCommandEvent&);
 	void AddToQueue();
 	void PlayPauseBtnClick(wxCommandEvent& event);
 	void ForwardSkipBtnClick(wxCommandEvent& event);
