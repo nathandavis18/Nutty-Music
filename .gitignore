@@ -31,3 +31,7 @@ x64/Debug
 *.db-shm
 *.db-wal
 *.opendb
+/.vs/Nutty Music/v17/.suo
+/.vs/Nutty Music/v17/DocumentLayout.json
+/.vs/Nutty Music/v17/fileList.bin
+/Nutty Music/x64/Release
