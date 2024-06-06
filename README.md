@@ -28,4 +28,6 @@ To use, you will need a copy of ffmpeg and yt-dlp stored in the root of the ytdl
 
 For ffmpeg, you only need ffmpeg.exe. ffprobe and ffplay can be discarded.
 
-Requires VC++ and Python 3.7+.
+Requires CMake 3.26 or later, vcpkg, and Python 3.7+. C++20 is required. Only tested using MSVC, but should work with GCC, Clang, and other compilers.
+
+CMake and vcpkg can be installed along with Visual Studio.
