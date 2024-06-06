@@ -1,7 +1,7 @@
-/vs
-/.vs/Nutty-Music
-/.vs/slnx.sqlite
 /ytdlp/ffmpeg.exe
 /ytdlp/yt-dlp.exe
 /out
-/.vs/CMake Overview
+.vs/
+/.vs
+/vs
+vs
