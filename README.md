@@ -24,4 +24,8 @@ May need to add the following to the environment variable in project properties:
 
 To use, you will need a copy of ffmpeg and yt-dlp stored in the root of the ytdlp folder.
 
+[Link to yt-dlp download](https://github.com/yt-dlp/yt-dlp/releases/download/2024.05.27/yt-dlp.exe) | [Link to ffmpeg download](https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)
+
+For ffmpeg, you only need ffmpeg.exe. ffprobe and ffplay can be discarded.
+
 Requires VC++ and Python 3.7+.
