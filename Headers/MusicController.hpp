@@ -7,9 +7,8 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <vector>
 #include "wx/wxprec.h"
-
-#include "custom/myVector.hpp" //My own custom-built vector class
 
 class MusicController {
 	struct Song { //All the data about a song that needs to be kept track of
@@ -41,7 +40,7 @@ public:
 private:
 	winrt::Windows::Media::Playback::MediaPlayer player;
 	winrt::Windows::Foundation::TimeSpan duration;
-	custom::myVector<Song> queue;
+	std::vector<Song> queue;
 	bool pauseState = false;
 	bool playerActive = false;
 	int currentQueueIndex = -1;

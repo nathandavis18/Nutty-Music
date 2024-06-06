@@ -61,7 +61,7 @@ MyWindow::MyWindow() : myFrame(new MyFrame()), music(MusicController()), queueSo
 void MyWindow::OnIdle(wxIdleEvent&) {
 	wxWakeUpIdle();
 	if (doneSearching) {
-		std::filesystem::remove("ytdlp\\searchResults.txt");
+		std::filesystem::remove("../../../../ytdlp\\searchResults.txt");
 		searchingLabel->Show(false);
 		doneSearching = false;
 		CreateButtons(results);
@@ -113,7 +113,7 @@ void MyWindow::PressedEnter(wxCommandEvent&) {
 /// <param name="doneWithSearch">A boolean value that is checked to see if this function is done running</param>
 /// <param name="searching">A boolean to know if the 'is searching' text should be displayed</param>
 /// <param name="gettingDownloadUrls">A boolean to know if the song can be played or not</param>
-void MyWindow::StartSearch(const std::string searchString, custom::myVector<std::string>& vecResults, bool& doneWithSearch, bool& searching, bool& gettingDownloadUrls) {
+void MyWindow::StartSearch(const std::string searchString, std::vector<std::string>& vecResults, bool& doneWithSearch, bool& searching, bool& gettingDownloadUrls) {
 	m.lock();
 	vecResults = processData.GetSearchResults(searchString, doneWithSearch, searching);//results contains all the data, now we need to parse it
 	urls = processData.GetDownloadUrl(vecResults, gettingDownloadUrls);
@@ -129,7 +129,7 @@ void MyWindow::StartSearch(const std::string searchString, custom::myVector<std:
 /// Creates the play and add to queue buttons for each search result returned.
 /// </summary>
 /// <param name="searchResults">The strings of search results</param>
-void MyWindow::CreateButtons(custom::myVector<std::string>& searchResults) {
+void MyWindow::CreateButtons(std::vector<std::string>& searchResults) {
 	for (int i = 0; i < searchResults.size(); ++i) {
 		wxButton* playButton = new wxButton(myFrame, BUTTON + i + playButtonIndexOffset, "Play", wxPoint(1000, 50 + (50 * i)), wxSize(75, 25));
 		playButton->Bind(wxEVT_BUTTON, &MyWindow::PlayBtnClick, this);
@@ -145,7 +145,7 @@ void MyWindow::CreateButtons(custom::myVector<std::string>& searchResults) {
 /// Creates the song lables so the user knows what each song is, based on a predetermined format
 /// </summary>
 /// <param name="searchResults">The strings of all search results</param>
-void MyWindow::CreateLabels(custom::myVector<std::string>& searchResults) {
+void MyWindow::CreateLabels(std::vector<std::string>& searchResults) {
 	for (int i = 0; i < searchResults.size(); ++i) {
 		std::string song = searchResults[i].substr(0, searchResults[i].find("BREAKPOINT"));
 		wxStaticText* st = new wxStaticText(myFrame, LABEL + i + songTitleLabelIndexOffset, song, wxPoint(600, 50 + (50 * i)), wxSize(300, 50));
@@ -168,14 +168,14 @@ void MyWindow::PlayBtnClick(wxCommandEvent& event) {
 }
 
 void MyWindow::PlaySong() {
-	if (!std::filesystem::is_directory("ytdlp\\temp")) {
-		std::filesystem::create_directory("ytdlp\\temp");
+	if (!std::filesystem::is_directory("../../../../ytdlp\\temp")) {
+		std::filesystem::create_directory("../../../../ytdlp\\temp");
 	}
 	else {
-		wxExecute("cmd.exe /c cd ytdlp\\temp & del /Q *.wav & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
+		wxExecute("cmd.exe /c cd ../../../../ytdlp\\temp & del /Q *.wav & del /Q *.mp3", output, errors, wxEXEC_ASYNC);
 	}
 
-	wxExecute("cmd.exe /c cd ytdlp & ffmpeg -i \"" + urls[playSongID] + "\" \"temp\\" + results[playSongID] + ".wav\"", output, errors, wxEXEC_ASYNC);
+	wxExecute("cmd.exe /c cd ../../../../ytdlp & ffmpeg -i \"" + urls[playSongID] + "\" \"temp\\" + results[playSongID] + ".wav\"", output, errors, wxEXEC_ASYNC);
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	music.ForcePlay(urls[playSongID], results[playSongID]);
 	waitingSongStart = false;
@@ -223,8 +223,8 @@ void MyWindow::QueueBtnClick(wxCommandEvent& event) {
 /// </summary>
 void MyWindow::AddToQueue() {
 	waitingAddQueue = false;
-	if (!std::filesystem::is_directory("ytdlp\\temp")) {
-		std::filesystem::create_directory("ytdlp\\temp");
+	if (!std::filesystem::is_directory("../../../../ytdlp\\temp")) {
+		std::filesystem::create_directory("../../../../ytdlp\\temp");
 	}
 	for (const int& x : tempQueueList) {
 		music.AddToQueue(urls[x], results[x]);
@@ -331,11 +331,11 @@ void MyWindow::OnClose(wxCloseEvent&) {
 	myFrame->Show(false);
 	music.ClosePlayer();
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp\\temp & del /Q *.wav", NULL, SW_HIDE);
-	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp\\temp & del /Q *.mp3", NULL, SW_HIDE);
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ../../../../ytdlp\\temp & del /Q *.wav", NULL, SW_HIDE);
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ../../../../ytdlp\\temp & del /Q *.mp3", NULL, SW_HIDE);
 	while (isSearching || gettingUrls) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10)); //Give the thread time to finish before fully closing
 	}
-	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ytdlp & del /Q *.txt", NULL, SW_HIDE);
+	ShellExecuteA(NULL, NULL, "cmd.exe", "/c cd ../../../../ytdlp & del /Q *.txt", NULL, SW_HIDE);
 	myFrame->Destroy();
 }

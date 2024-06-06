@@ -5,7 +5,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-#include "custom/myVector.hpp" //My own custom-built vector class
+#include <vector>
 #include "wx/wxprec.h"
 #include "wx/utils.h"
 
@@ -38,11 +38,11 @@ private:
 	MyFrame* myFrame;
 	MusicController music;
 	DataProcessing processData;
-	custom::myVector<std::string> results;
-	custom::myVector<std::string> urls;
-	custom::myVector<wxStaticText*> labels;
-	custom::myVector<wxButton*> playButtons;
-	custom::myVector<wxButton*> addQueueButtons;
+	std::vector<std::string> results;
+	std::vector<std::string> urls;
+	std::vector<wxStaticText*> labels;
+	std::vector<wxButton*> playButtons;
+	std::vector<wxButton*> addQueueButtons;
 
 	wxTextCtrl* text;
 	wxStaticText* searchingLabel;
@@ -53,8 +53,8 @@ private:
 
 	//Functions to control the actions of the UI
 	void PressedEnter(wxCommandEvent& event);
-	void CreateButtons(custom::myVector<std::string>& searchResults);
-	void CreateLabels(custom::myVector<std::string>& searchResults);
+	void CreateButtons(std::vector<std::string>& searchResults);
+	void CreateLabels(std::vector<std::string>& searchResults);
 	void PlayBtnClick(wxCommandEvent& event);
 	void QueueBtnClick(wxCommandEvent& event);
 	void PlaySong();
@@ -63,7 +63,7 @@ private:
 	void PlayPauseBtnClick(wxCommandEvent& event);
 	void ForwardSkipBtnClick(wxCommandEvent& event);
 	void ReverseSkipBtnClick(wxCommandEvent& event);
-	void StartSearch(const std::string, custom::myVector<std::string>&, bool&, bool&, bool&);
+	void StartSearch(const std::string, std::vector<std::string>&, bool&, bool&, bool&);
 	void ClearPrevSearch();
 	void OnClose(wxCloseEvent& event);
 	void OnIdle(wxIdleEvent&);
@@ -79,7 +79,7 @@ private:
 	int queueSongID; //The id of the song to be added to queue
 	int playSongID; //The id of the song to be played
 	
-	custom::myVector<int> tempQueueList; //If waitingAddQueue is true, then queueSongID gets added to vector.
+	std::vector<int> tempQueueList; //If waitingAddQueue is true, then queueSongID gets added to vector.
 										 //Vector is cleared after being used
 
 	static constexpr int playButtonIndexOffset = 1;

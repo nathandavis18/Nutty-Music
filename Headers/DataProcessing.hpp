@@ -6,15 +6,12 @@
 #include <fstream>
 #include <vector>
 #include <filesystem>
-#include "custom/myVector.hpp"
 
 
 class DataProcessing {
 public:
-	custom::myVector<std::string> GetSearchResults(const std::string&, bool&, bool&);
-	custom::myVector<std::string> GetDownloadUrl(custom::myVector<std::string>&, bool&);
+	std::vector<std::string> GetSearchResults(const std::string&, bool&, bool&);
+	std::vector<std::string> GetDownloadUrl(std::vector<std::string>&, bool&);
 	bool YtdlpDone();
 	std::filesystem::path BrowseFiles();
-private:
-	//custom::myVector<std::wstring> temp;
 };

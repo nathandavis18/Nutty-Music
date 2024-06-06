@@ -20,7 +20,7 @@ void MusicController::AddToQueue(const std::string& songUrl, const std::string& 
 	}
 	else {
 		s.url = songUrl;
-		s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".mp3");
+		s.path = std::filesystem::current_path() / ("../../../../ytdlp\\temp\\" + s.songTitle + ".mp3");
 	}
 	queue.push_back(s);
 
@@ -44,7 +44,7 @@ void MusicController::ForcePlay(const std::string& songUrl, const std::string& s
 	}
 	else {
 		s.url = songUrl;
-		s.path = std::filesystem::current_path() / ("ytdlp\\temp\\" + s.songTitle + ".wav");
+		s.path = std::filesystem::current_path() / ("../../../../ytdlp\\temp\\" + s.songTitle + ".wav");
 	}
 	queue.push_back(s);
 
@@ -130,30 +130,30 @@ void MusicController::CheckQueue() {
 	for (int i = currentQueueIndex; i < static_cast<int>(queue.size()); ++i) {
 		if (i > 0) {
 			if (i - 3 <= currentQueueIndex && !std::filesystem::exists(queue[i].path) && !queue[i].isLocal) {
-				std::string cmd = " -i \"" + queue[i].url + "\" \"ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
+				std::string cmd = " -i \"" + queue[i].url + "\" \"../../../../ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
 				std::string cmdWav = "-i \"" + queue[i].url + "\" \"temp\\" + queue[i].songTitle + ".wav\"";
-				ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
-				ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmd.c_str(), NULL, SW_HIDE);
-				ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".wav\"").c_str(), NULL, SW_HIDE);
+				ShellExecuteA(NULL, NULL, "../../../../ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
+				ShellExecuteA(NULL, NULL, "../../../../ytdlp\\ffmpeg.exe", cmd.c_str(), NULL, SW_HIDE);
+				ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ../../../../ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".wav\"").c_str(), NULL, SW_HIDE);
 			}
 			else if (i - 3 > currentQueueIndex) {
 				if (!queue[i].isLocal) {
-					ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".mp3\"").c_str(), NULL, SW_HIDE);
+					ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ../../../../ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".mp3\"").c_str(), NULL, SW_HIDE);
 				}
 			}
 		}
 	}
 	for (int i = currentQueueIndex - 1; i > 0; --i) {
 		if (i + 3 >= currentQueueIndex && !std::filesystem::exists(queue[i].path) && !queue[i].isLocal) {
-			std::string cmd = " -i \"" + queue[i].url + "\" \"ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
+			std::string cmd = " -i \"" + queue[i].url + "\" \"../../../../ytdlp\\temp\\" + queue[i].songTitle + ".mp3\"";
 			std::string cmdWav = "-i \"" + queue[i].url + "\" \"temp\\" + queue[i].songTitle + ".wav\"";
-			ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
-			ShellExecuteA(NULL, NULL, "ytdlp\\ffmpeg.exe", cmd.c_str(), NULL, SW_HIDE);
-			ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".wav\"").c_str(), NULL, SW_HIDE);
+			ShellExecuteA(NULL, NULL, "../../../../ytdlp\\ffmpeg.exe", cmdWav.c_str(), NULL, SW_HIDE);
+			ShellExecuteA(NULL, NULL, "../../../../ytdlp\\ffmpeg.exe", cmd.c_str(), NULL, SW_HIDE);
+			ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ../../../../ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".wav\"").c_str(), NULL, SW_HIDE);
 		}
 		else if(i + 3 < currentQueueIndex) {
 			if (!queue[i].isLocal) {
-				ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".mp3\"").c_str(), NULL, SW_HIDE);
+				ShellExecuteA(NULL, NULL, "cmd.exe", ("/c cd ../../../../ytdlp\\temp & del /Q \"" + queue[i].songTitle + ".mp3\"").c_str(), NULL, SW_HIDE);
 			}
 		}
 	}
