@@ -15,12 +15,7 @@ Current Features:
     Able to Skip forward/backward within the queue
         --If only 1 song is in queue, this just restarts the song
 
-This is a Windows-Only software. A Visual Studio solution and vcxproj file are included.
-To build, simply open in Visual Studio, and build, either in release or debug mode.
-
-May need to add the following to the environment variable in project properties:
-
-    PATH=$(ProjectDir)\dll;%PATH%
+This is a Windows-Only software.
 
 To use, you will need a copy of ffmpeg and yt-dlp stored in the root of the ytdlp folder.
 
